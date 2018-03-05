@@ -17,7 +17,7 @@ namespace Sidestep.Common
 {
     public abstract class Omen : IAvoider
     {
-        private Vector3 One = new Vector3(1, 0, 1);
+        private readonly Vector3 One = new Vector3(1, 0, 1);
 
         /// <summary>
         /// gets the range information using the omen data
@@ -30,7 +30,7 @@ namespace Sidestep.Common
             try
             {
 
-                var m4x4 = spellCaster.GetProjection();
+                var m4x4 = spellCaster.OmenMatrix;
 
                 center = m4x4.Center();
                 m4x4.Transform(One, out var edge);
@@ -51,7 +51,7 @@ namespace Sidestep.Common
         {
             try
             {
-                var m4x4 = spellCaster.GetProjection();
+                var m4x4 = spellCaster.OmenMatrix;
 
                 //m4x4.Transform(ref One, out var transformed);
                 return new[]
@@ -74,7 +74,7 @@ namespace Sidestep.Common
             try
             {
                 var cachedSpell = spellCaster.CastingSpellId;
-                var m4x4 = spellCaster.GetProjection();
+                var m4x4 = spellCaster.OmenMatrix;
 
                 //sin(0), 0, cos(0)
                 m4x4.Transform(new Vector3(0, 0, 1), out var transformed);
@@ -83,16 +83,16 @@ namespace Sidestep.Common
                 var depth = transformed.Distance2D(center);
                 var d = transformed - center;
                 
-                var rot = MathEx.ToDegrees(MathEx.Rotation(d));
+                var rot = MathEx.Rotation(d);
 
-                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1}", rot, MathEx.ToDegrees(spellCaster.Heading));
+                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rot - spellCaster.Heading);
 
                return AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
-                    () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell,
-                    bc => bc.ObjectId == spellCaster.ObjectId,
+                    () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
+                    bc => bc.ObjectId == spellCaster.ObjectId, //object selector
                     () => center, //LeashPoint
-                    40f,
-                    rot, //rotation
+                    40f, //leash size
+                    MathEx.ToDegrees(rot - spellCaster.Heading), //rotation
                     depth, //radius / Depth
                     arcDegrees + 5, //arcDegrees
                     bc => bc.Location
@@ -107,7 +107,7 @@ namespace Sidestep.Common
 
         public AvoidInfo Handle(BattleCharacter spellCaster)
         {
-            if (spellCaster.OmenProjectionPtr() == IntPtr.Zero)
+            if (spellCaster.OmenProjectionPtr == IntPtr.Zero)
             {
                 Logger.Info("Cast contains no Projection data.");
                 return null;
@@ -120,30 +120,6 @@ namespace Sidestep.Common
 
     public static class m4x4Ext
     {
-        private static int OmenOffset; // 1540
-        private static int OmenProjection; //1b8
-
-        private static int mtx = 0x20;
-
-        
-        static m4x4Ext()
-        {
-            var pf = new PatternFinder(Core.Memory);
-            OmenOffset = pf.Find("Search 48 89 BB ? ? ? ? F3 0F 11 8B ? ? ? ? Add 3 Read32").ToInt32();
-            OmenProjection = pf.Find("Search 48 8B 99 ? ? ? ? 48 85 DB 74 40 0F B6 8B ? ? ? ? Add 3 Read32").ToInt32();
-        }
-
-        public static IntPtr OmenProjectionPtr(this BattleCharacter bc)
-        {
-            return Core.Memory.Read<IntPtr>(bc.Pointer + OmenOffset);
-        }
-
-        public static Matrix44 GetProjection(this BattleCharacter bc)
-        {
-            return Core.Memory.Read<Matrix44>(
-                Core.Memory.Read<IntPtr>(Core.Memory.Read<IntPtr>(bc.Pointer + OmenOffset) + OmenProjection) +
-                mtx);
-        }
 
         public static Vector3 Center(this Matrix44 matrix)
         {
@@ -162,7 +138,7 @@ namespace Sidestep.Common
 
             transformed.Y = from.X * matrix.M02 +
                             //from.Y * matrix.M12 +
-                            from.Y * matrix.M22 
+                            from.Y * matrix.M22
                             //+
                             //matrix.M32
                             ;

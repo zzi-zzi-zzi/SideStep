@@ -40,6 +40,7 @@ namespace Sidestep
         //    else
         //        Overlay3D.Drawing -= ff14.Visualize;
         //}
+
         public override void OnInitialize()
         {
             LoadAvoidanceObjects();
