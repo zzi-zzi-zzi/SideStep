@@ -16,6 +16,8 @@ namespace Sidestep.Avoid
     /// <summary>
     /// lazer beam type
     /// </summary>
+    
+    [Avoider(AvoiderType.Spell, 9198)] //Found in Ala Mhigo (Dungeon) - Cast by 12th Legion Roader on spawn before the first boss. 
     [Avoider(AvoiderType.CastType, 4)]
     public class LazerGeneric : Omen
     {
