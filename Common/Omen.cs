@@ -83,16 +83,16 @@ namespace Sidestep.Common
                 var depth = transformed.Distance2D(center);
                 var d = transformed - center;
                 
-                var rot = MathEx.Rotation(d);
-
-                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rot - spellCaster.Heading);
+                var rot = MathEx.NormalizeRadian(MathEx.Rotation(d));
+                
+                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, MathEx.NormalizeRadian(rot - spellCaster.Heading));
 
                return AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
                     () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
                     bc => bc.ObjectId == spellCaster.ObjectId, //object selector
                     () => center, //LeashPoint
                     40f, //leash size
-                    MathEx.ToDegrees(rot - spellCaster.Heading), //rotation
+                    MathEx.ToDegrees(MathEx.NormalizeRadian(rot - spellCaster.Heading)), //rotation
                     depth, //radius / Depth
                     arcDegrees + 5, //arcDegrees
                     bc => bc.Location

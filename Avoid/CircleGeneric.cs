@@ -14,6 +14,7 @@ namespace Sidestep.Avoid
     [Avoider(AvoiderType.CastType, 2)]
     [Avoider(AvoiderType.CastType, 5)]
     [Avoider(AvoiderType.CastType, 6)]
+    [Avoider(AvoiderType.CastType, 10)]
     public class CircleGeneric : Omen
     {
         public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
@@ -31,7 +32,7 @@ namespace Sidestep.Avoid
                 () => spellCaster.CastingSpellId == cached,
                 null,
                 40f,
-                bc => range + 0.5f,
+                bc => range,
                 bc => center,
                 () => new[] {spellCaster}
             );

@@ -33,6 +33,7 @@ namespace Sidestep.Avoid
     [Avoider(AvoiderType.Omen, 98)]
     [Avoider(AvoiderType.Omen, 100)]
     [Avoider(AvoiderType.Omen, 159)]
+    [Avoider(AvoiderType.Omen, 183)]
     internal class Type_glfan060 : Omen
     {
        
@@ -45,6 +46,7 @@ namespace Sidestep.Avoid
     [Avoider(AvoiderType.Omen, 4)]
     [Avoider(AvoiderType.Omen, 102)]
     [Avoider(AvoiderType.Omen, 163)]
+    [Avoider(AvoiderType.Omen, 184)]
     internal class Type_glfan090 : Omen
     {
 
@@ -56,6 +58,7 @@ namespace Sidestep.Avoid
     [Avoider(AvoiderType.Omen, 5)]
     [Avoider(AvoiderType.Omen, 101)]
     [Avoider(AvoiderType.Omen, 120)]
+    [Avoider(AvoiderType.Omen, 185)]
     internal class Type_glfan120 : Omen
     {
 
@@ -76,6 +79,7 @@ namespace Sidestep.Avoid
             return AddCone(spellCaster, 150);
         }
     }
+
 
     [Avoider(AvoiderType.Omen, 107)]
     internal class Type_glfan180 : Omen
