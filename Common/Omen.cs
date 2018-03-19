@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Clio.Common;
 using Clio.Utilities;
@@ -17,7 +19,7 @@ namespace Sidestep.Common
 {
     public abstract class Omen : IAvoider
     {
-        private readonly Vector3 One = new Vector3(1, 0, 1);
+        private readonly Vector3 One = new Vector3(0, 0, 1);
 
         /// <summary>
         /// gets the range information using the omen data
@@ -83,20 +85,24 @@ namespace Sidestep.Common
                 var depth = transformed.Distance2D(center);
                 var d = transformed - center;
                 
-                var rot = MathEx.NormalizeRadian(MathEx.Rotation(d));
-                
-                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, MathEx.NormalizeRadian(rot - spellCaster.Heading));
+                var rot = MathEx.Rotation(d);
 
-               return AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
+                var rad = (float)Math.Round(MathEx.NormalizeRadian(rot - spellCaster.Heading), 2);
+
+
+                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rad);
+
+                
+                return AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
                     () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
                     bc => bc.ObjectId == spellCaster.ObjectId, //object selector
                     () => center, //LeashPoint
                     40f, //leash size
-                    MathEx.ToDegrees(MathEx.NormalizeRadian(rot - spellCaster.Heading)), //rotation
+                    rad, //rotation
                     depth, //radius / Depth
-                    arcDegrees + 5, //arcDegrees
+                    arcDegrees + 13, //arcDegrees
                     bc => bc.Location
-                );
+                    ); ;
             }
             catch (Exception ex)
             {

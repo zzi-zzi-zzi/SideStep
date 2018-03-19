@@ -32,7 +32,7 @@ namespace Sidestep.Avoid
                 () => spellCaster.CastingSpellId == cached,
                 null,
                 40f,
-                bc => range,
+                bc => range + 0.5f,
                 bc => center,
                 () => new[] {spellCaster}
             );
