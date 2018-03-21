@@ -148,7 +148,7 @@ namespace Sidestep
 	                    if (_owners.ContainsKey((ulong) AvoiderType.Omen + c.SpellCastInfo.SpellData.Omen))
 	                    {
 	                        Logger.Verbose($"{c.SpellCastInfo.SpellData.LocalizedName} [Omen][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
-                            return _owners[(ulong) AvoiderType.Omen + c.SpellCastInfo.SpellData.RawCastType].Handle(c);
+                            return _owners[(ulong) AvoiderType.Omen + c.SpellCastInfo.SpellData.Omen].Handle(c);
 	                    }
 
 	                    if (_owners.ContainsKey((ulong) AvoiderType.CastType + c.SpellCastInfo.SpellData.RawCastType))
