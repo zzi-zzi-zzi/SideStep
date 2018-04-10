@@ -100,7 +100,7 @@ namespace Sidestep.Common
                     40f, //leash size
                     rad, //rotation
                     depth, //radius / Depth
-                    arcDegrees + 20, //arcDegrees
+                    arcDegrees + 40, //arcDegrees
                     bc => bc.Location
                     ); ;
             }
