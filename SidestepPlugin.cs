@@ -19,8 +19,10 @@ using ff14bot.Behavior;
 using ff14bot.Enums;
 using ff14bot.Helpers;
 using ff14bot.Managers;
+using ff14bot.Navigation;
 using ff14bot.Objects;
 using ff14bot.Overlay3D;
+using ff14bot.Pathing;
 using ff14bot.Pathing.Avoidance;
 using Sidestep.Helpers;
 using Sidestep.Interfaces;
@@ -128,6 +130,10 @@ namespace Sidestep
 
 	    public override void OnPulse()
 	    {
+            //don't run if we don't have a navigation provider
+            if (Navigator.NavigationProvider == null)
+                return;
+
 	        using (new PerformanceLogger("Pulse"))
 	        {
                 //remove tracked avoidances that have completed

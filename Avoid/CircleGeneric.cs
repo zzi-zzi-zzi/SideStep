@@ -36,7 +36,7 @@ namespace Sidestep.Avoid
             var cached = spellCaster.CastingSpellId;
 
             return AvoidanceManager.AddAvoidLocation(
-                () => spellCaster.CastingSpellId == cached,
+                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
                 bc => range + 0.5f,
