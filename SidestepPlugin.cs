@@ -1,4 +1,12 @@
-﻿using System;
+﻿/*
+SideStep is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+You should have received a copy of the license along with this
+work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
+Orginal work done by zzi
+                                                                                 */
+
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -31,15 +39,17 @@ namespace Sidestep
 	    public override bool WantButton => true;
 	    private bool on = false;
 
-        //public override void OnButtonPress()
-        //{
+        // public override void OnButtonPress()
+        // {
         //    on = !on;
         //    Logger.Info("Visuals: {0}", on);
         //    if (on)
         //        Overlay3D.Drawing += ff14.Visualize;
         //    else
         //        Overlay3D.Drawing -= ff14.Visualize;
-        //}
+        // }
+
+
 
         public override void OnInitialize()
         {
