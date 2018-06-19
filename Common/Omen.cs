@@ -1,4 +1,11 @@
-﻿using System;
+﻿/*
+SideStep is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+You should have received a copy of the license along with this
+work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
+Orginal work done by zzi
+                                                                                 */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -89,20 +96,20 @@ namespace Sidestep.Common
 
                 var rad = (float)Math.Round(MathEx.NormalizeRadian(rot - spellCaster.Heading), 2);
 
-
+                var me = Core.Me.Location;
                 Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rad);
 
                 
                 return AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
                     () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
                     bc => bc.ObjectId == spellCaster.ObjectId, //object selector
-                    () => center, //LeashPoint
-                    40f, //leash size
+                    () => me, //LeashPoint
+                    120, //leash size
                     rad, //rotation
                     depth, //radius / Depth
-                    arcDegrees + 40, //arcDegrees
+                    arcDegrees * 1.25f, //arcDegrees
                     bc => bc.Location
-                    ); ;
+                    ); 
             }
             catch (Exception ex)
             {
