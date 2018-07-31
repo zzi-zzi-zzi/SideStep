@@ -17,6 +17,7 @@ using ff14bot.Pathing.Avoidance;
 using Sidestep.Common;
 using Sidestep.Interfaces;
 using Sidestep.Helpers;
+using System.Collections.Generic;
 
 namespace Sidestep.Avoid
 {
@@ -42,14 +43,14 @@ namespace Sidestep.Avoid
         //    return Core.Me.IsMelee();
         //}
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             var cached = spellCaster.CastingSpellId;
             //var rotation = Rotation(spellCaster);
             //var cl = spellCaster.SpellCastInfo.CastLocation;
             var square = Square(spellCaster);
 
-            return AvoidanceManager.AddAvoidPolygon(
+            return new[]{ AvoidanceManager.AddAvoidPolygon(
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
@@ -59,7 +60,7 @@ namespace Sidestep.Avoid
                 bc => square, //points
                 bc => spellCaster.Location,
                 () => new[] {spellCaster} //objs
-            );
+            ) };
 
 
         }

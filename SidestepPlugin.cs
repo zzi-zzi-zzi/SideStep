@@ -158,7 +158,7 @@ namespace Sidestep
 
 	                            !AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c)))
 	                            .GroupBy(p => p.ObjectId)
-                    .Select(o =>
+                    .SelectMany(o =>
 	                {
 	                    var c = o.First();
 	                    if (_owners.ContainsKey((ulong) AvoiderType.Spell + c.CastingSpellId))

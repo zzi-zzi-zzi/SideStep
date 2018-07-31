@@ -12,6 +12,7 @@ using ff14bot.Pathing.Avoidance;
 using Sidestep.Common;
 using Sidestep.Interfaces;
 using Sidestep.Logging;
+using System.Collections.Generic;
 
 namespace Sidestep.Avoid
 {
@@ -24,7 +25,7 @@ namespace Sidestep.Avoid
     [Avoider(AvoiderType.CastType, 10)]
     public class CircleGeneric : Omen
     {
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             if(spellCaster.SpellCastInfo.SpellData.EffectRange > 45)
                 Logger.Info("Spell range is > 45. Does this require specific logic?");
@@ -35,14 +36,14 @@ namespace Sidestep.Avoid
             Logger.Info($"Avoid Cirlce: [{center}][Range: {range}]");
             var cached = spellCaster.CastingSpellId;
 
-            return AvoidanceManager.AddAvoidLocation(
+            return new[]{ AvoidanceManager.AddAvoidLocation(
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
                 bc => range + 0.5f,
                 bc => center,
                 () => new[] {spellCaster}
-            );
+            ) };
             
         }
     }

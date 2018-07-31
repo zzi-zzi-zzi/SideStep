@@ -10,6 +10,7 @@ using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
 using Sidestep.Common;
 using Sidestep.Interfaces;
+using System.Collections.Generic;
 
 namespace Sidestep.Avoid
 {
@@ -18,7 +19,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan020 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             return AddCone(spellCaster, 20);
         }
@@ -29,7 +30,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan030 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             return AddCone(spellCaster, 30);
         }
@@ -44,7 +45,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan060 : Omen
     {
        
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             return AddCone(spellCaster, 60);
         }
@@ -57,7 +58,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan090 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             return AddCone(spellCaster, 90);
         }
@@ -69,7 +70,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan120 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             
             return AddCone(spellCaster, 120);
@@ -80,7 +81,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan150 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             
             return AddCone(spellCaster, 150);
@@ -92,7 +93,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan180 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             
             return AddCone(spellCaster, 180);
@@ -103,7 +104,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan210 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             
             return AddCone(spellCaster, 210);
@@ -116,7 +117,7 @@ namespace Sidestep.Avoid
     internal class Type_glfan270 : Omen
     {
 
-        public override AvoidInfo OmenHandle(BattleCharacter spellCaster)
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
         {
             
             return AddCone(spellCaster, 270);

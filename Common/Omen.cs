@@ -78,7 +78,7 @@ namespace Sidestep.Common
             }
         }
 
-        public AvoidInfo AddCone(BattleCharacter spellCaster, float arcDegrees)
+        public IEnumerable<AvoidInfo> AddCone(BattleCharacter spellCaster, float arcDegrees)
         {
             try
             {
@@ -99,17 +99,25 @@ namespace Sidestep.Common
                 var me = Core.Me.Location;
                 Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rad);
 
-                
-                return AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
+
+                return new[]{ AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
                     () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
                     bc => bc.ObjectId == spellCaster.ObjectId, //object selector
                     () => me, //LeashPoint
                     120, //leash size
                     rad, //rotation
                     depth, //radius / Depth
-                    arcDegrees * 1.25f, //arcDegrees
+                    arcDegrees * 1.55f, //arcDegrees
                     bc => bc.Location
-                    ); 
+                    ),
+                    
+                    //add something under the mob so we don't get hit by standing at the mobs location.
+                    AvoidanceManager.AddAvoidLocation(
+                        () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
+                        spellCaster.CombatReach / 2,
+                        () => spellCaster.Location
+                    )
+                    }; 
             }
             catch (Exception ex)
             {
@@ -118,7 +126,7 @@ namespace Sidestep.Common
             }
         }
 
-        public AvoidInfo Handle(BattleCharacter spellCaster)
+        public IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster)
         {
             if (spellCaster.OmenProjectionPtr == IntPtr.Zero)
             {
@@ -128,7 +136,7 @@ namespace Sidestep.Common
             return OmenHandle(spellCaster);
         }
 
-        public abstract AvoidInfo OmenHandle(BattleCharacter spellCaster);
+        public abstract IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster);
     }
 
     public static class m4x4Ext

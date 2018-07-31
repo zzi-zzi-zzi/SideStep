@@ -7,11 +7,12 @@ Orginal work done by zzi
                                                                                  */
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
+using System.Collections.Generic;
 
 namespace Sidestep.Interfaces
 {
     internal interface IAvoider
     {
-        AvoidInfo Handle(BattleCharacter spellCaster);
+        IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster);
     }
 }
