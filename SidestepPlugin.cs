@@ -80,6 +80,12 @@ namespace Sidestep
             {
                 var supportsCapabilities = RoutineManager.Current.SupportedCapabilities != CapabilityFlags.None;
 
+                if(AvoidanceManager.IsRunningOutOfAvoid && Core.Me.IsCasting)
+                {
+                    ActionManager.StopCasting();
+                    return true;
+                }
+
                 if (AvoidanceManager.IsRunningOutOfAvoid && !supportsCapabilities)
                     return true;
                 var poiType = Poi.Current.Type;
