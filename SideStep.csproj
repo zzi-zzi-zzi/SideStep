@@ -74,11 +74,11 @@
   <!-- Condition="'$(Configuration)|$(Platform)' == 'Release|x64' Or '$(Configuration)|$(Platform)' == 'Debug|x64'" -->
   <ItemGroup>
     <Reference Include="GreyMagic">
-      <HintPath>..\..\GreyMagic.dll</HintPath>
+      <HintPath>D:\reborn_new\GreyMagic.dll</HintPath>
     </Reference>
     <Reference Include="PresentationFramework" />
     <Reference Include="RebornBuddy">
-      <HintPath>..\..\RebornBuddy.exe</HintPath>
+      <HintPath>D:\reborn_new\RebornBuddy.exe</HintPath>
     </Reference>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />

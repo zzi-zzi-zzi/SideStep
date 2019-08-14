@@ -99,6 +99,11 @@ namespace Sidestep.Common
                 var me = Core.Me.Location;
                 Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rad);
 
+                if (WorldManager.RawZoneId == 561 && (depth > 17 && depth < 19))
+                {
+                    depth = 25;
+                }
+
 
                 return new[]{ AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
                     () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
