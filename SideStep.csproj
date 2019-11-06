@@ -113,7 +113,6 @@
     <Compile Include="Interfaces\AvoiderAttribute.cs" />
     <Compile Include="Interfaces\AvoiderType.cs" />
     <Compile Include="Interfaces\IAvoider.cs" />
-    <Compile Include="Properties\Annotations.cs" />
     <Compile Include="SidestepPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Logging\LogColors.cs" />
