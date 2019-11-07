@@ -66,4 +66,64 @@ namespace Sidestep.Avoid
         }
         
     }
+
+    [Avoider(AvoiderType.Omen, 188)]
+    public class Cross : Omen
+    {
+        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
+        {
+            var cached = spellCaster.CastingSpellId;
+            var square = Square(spellCaster);
+            var result = new List<AvoidInfo>();
+
+            result.Add(AvoidanceManager.AddAvoidPolygon(
+                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
+                null,
+                40f,
+                bc => 0f, //rotation
+                bc => 1.0f, //scale
+                bc => 15.0f, //height
+                bc => square, //points
+                bc => spellCaster.Location,
+                () => new[] { spellCaster } //objs
+            ));
+
+            result.Add(AvoidanceManager.AddAvoidPolygon(
+                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
+                null,
+                40f,
+                bc => (float)Math.PI, //rotation
+                bc => 1.0f, //scale
+                bc => 15.0f, //height
+                bc => square, //points
+                bc => spellCaster.Location,
+                () => new[] { spellCaster } //objs
+            ));
+            result.Add(AvoidanceManager.AddAvoidPolygon(
+                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
+                null,
+                40f,
+                bc => - (float)Math.PI / 2, //rotation
+                bc => 1.0f, //scale
+                bc => 15.0f, //height
+                bc => square, //points
+                bc => spellCaster.Location,
+                () => new[] { spellCaster } //objs
+            ));
+            result.Add(AvoidanceManager.AddAvoidPolygon(
+                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
+                null,
+                40f,
+                bc => (float)Math.PI / 2, //rotation
+                bc => 1.0f, //scale
+                bc => 15.0f, //height
+                bc => square, //points
+                bc => spellCaster.Location,
+                () => new[] { spellCaster } //objs
+            ));
+
+
+            return result;
+        }
+    }
 }
