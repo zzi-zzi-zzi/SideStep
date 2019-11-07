@@ -156,7 +156,7 @@ namespace Sidestep
 	            var newSpellCasts = GameObjectManager.GetObjectsOfType<BattleCharacter>()
                 .Where(IsValid)
                 .SelectMany(HandleNewCast)
-                .Where(i => i != null).ToList();
+                .ToList();
 
 	            if (newSpellCasts.Any())
 	            {
