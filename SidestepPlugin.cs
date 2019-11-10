@@ -194,29 +194,29 @@ namespace Sidestep
         private static bool IsValid(BattleCharacter c)
         {
 
-            if (!c.InCombat)
-                return false;
+            //if (!c.InCombat)
+            //    return false;
 
             if (c.IsMe)
                 return false;
 
-            if (!c.StatusFlags.HasFlag(StatusFlags.Hostile))
-                return false;
+            //if (!c.StatusFlags.HasFlag(StatusFlags.Hostile))
+            //    return false;
 
             if (c.CastingSpellId == 0)
                 return false;
 
 
-            if (c.DistanceSqr() < 50 * 50)
+            //if (c.DistanceSqr() < 50 * 50)
+            //{
+            if (c.SpellCastInfo.SpellData.Omen != 0)
             {
-                if (c.SpellCastInfo.SpellData.Omen != 0)
+                if (!AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c)))
                 {
-                    if (!AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c)))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
+            //}
 
 
             //var valid = c.InCombat && !c.IsMe && c.StatusFlags.HasFlag(StatusFlags.Hostile) && c.CastingSpellId != 0 &&
