@@ -15,6 +15,7 @@ using System.Collections.Generic;
 namespace Sidestep.Avoid
 {
 
+    [Avoider(AvoiderType.Omen, 80)]
     [Avoider(AvoiderType.Omen, 146)]
     internal class Type_glfan020 : Omen
     {
