@@ -31,15 +31,15 @@ using TreeSharp;
 
 namespace Sidestep
 {
-    
-	public class Sidestep : BotPlugin
-	{
-        
+
+    public class Sidestep : BotPlugin
+    {
+
         public override string Author => "ZZI";
-	    public override Version Version => new Version(3, 0);
-	    public override string Name => "SideStep";
-	    public override bool WantButton => true;
-	    private bool on = false;
+        public override Version Version => new Version(3, 0);
+        public override string Name => "SideStep";
+        public override bool WantButton => true;
+        private bool on = false;
 
         // public override void OnButtonPress()
         // {
@@ -58,18 +58,18 @@ namespace Sidestep
             LoadAvoidanceObjects();
         }
         public override void OnEnabled()
-	    {
-	        Logger.Verbose("Sidestep has been Enabled");
+        {
+            Logger.Verbose("Sidestep has been Enabled");
 
-	        TreeHooks.Instance.OnHooksCleared += rehookavoid;
+            TreeHooks.Instance.OnHooksCleared += rehookavoid;
             rehookavoid(null, null);
-	    }
-	    public override void OnDisabled()
-	    {
-	        Logger.Verbose("Sidestep has been Disabled");
-            if(s_hook != null)
-	            TreeHooks.Instance.RemoveHook("TreeStart", s_hook);
-	        TreeHooks.Instance.OnHooksCleared -= rehookavoid;
+        }
+        public override void OnDisabled()
+        {
+            Logger.Verbose("Sidestep has been Disabled");
+            if (s_hook != null)
+                TreeHooks.Instance.RemoveHook("TreeStart", s_hook);
+            TreeHooks.Instance.OnHooksCleared -= rehookavoid;
         }
 
         private static ActionRunCoroutine s_hook;
@@ -80,7 +80,7 @@ namespace Sidestep
             {
                 var supportsCapabilities = RoutineManager.Current.SupportedCapabilities != CapabilityFlags.None;
 
-                if(AvoidanceManager.IsRunningOutOfAvoid && Core.Me.IsCasting)
+                if (AvoidanceManager.IsRunningOutOfAvoid && Core.Me.IsCasting)
                 {
                     ActionManager.StopCasting();
                     return true;
@@ -109,75 +109,75 @@ namespace Sidestep
             });
 
             TreeHooks.Instance.InsertHook("TreeStart", 0, s_hook);
-	    }
+        }
 
 
-	    private Dictionary<ulong, IAvoider> _owners = new Dictionary<ulong, IAvoider>();
+        private Dictionary<ulong, IAvoider> _owners = new Dictionary<ulong, IAvoider>();
 
-	    private void LoadAvoidanceObjects()
-	    {
-	        var baseType = typeof(IAvoider);
-	        var types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t!=baseType && baseType.IsAssignableFrom(t));
-	        
+        private void LoadAvoidanceObjects()
+        {
+            var baseType = typeof(IAvoider);
+            var types = Assembly.GetExecutingAssembly().GetTypes().Where(t => t != baseType && baseType.IsAssignableFrom(t));
+
 
             foreach (var type in types)
-	        {
-	            var atbs = type.GetCustomAttributes<AvoiderAttribute>();
-	            foreach (var atb in atbs)
-	            {
-	                _owners.Add((ulong)atb.Type + atb.Key, (IAvoider)Activator.CreateInstance(type));
+            {
+                var atbs = type.GetCustomAttributes<AvoiderAttribute>();
+                foreach (var atb in atbs)
+                {
+                    _owners.Add((ulong)atb.Type + atb.Key, (IAvoider)Activator.CreateInstance(type));
                 }
-	        }
-	    }
+            }
+        }
 
-	    
 
-	    private readonly List <AvoidInfo> _tracked = new List<AvoidInfo>();
 
-	    public override void OnPulse()
-	    {
+        private readonly List<AvoidInfo> _tracked = new List<AvoidInfo>();
+
+        public override void OnPulse()
+        {
             //don't run if we don't have a navigation provider
             if (Navigator.NavigationProvider == null)
                 return;
 
-	        using (new PerformanceLogger("Pulse"))
-	        {
+            using (new PerformanceLogger("Pulse"))
+            {
                 //remove tracked avoidances that have completed
-	            var removable = _tracked.Where(i => !i.Condition() && AvoidanceManager.Avoids.All(z => z.AvoidInfo != i)).ToList();
+                var removable = _tracked.Where(i => !i.Condition() && AvoidanceManager.Avoids.All(z => z.AvoidInfo != i)).ToList();
 
                 if (removable.Any())
-	            {
-	                Logger.Info($"Removing {removable.Count} completed spells");
-	                AvoidanceManager.RemoveAllAvoids(i => removable.Contains(i));
-	                _tracked.RemoveAll(x => removable.Contains(x));
-	            }
+                {
+                    Logger.Info($"Removing {removable.Count} completed spells");
+                    AvoidanceManager.RemoveAllAvoids(i => removable.Contains(i));
+                    _tracked.RemoveAll(x => removable.Contains(x));
+                }
 
 
-	            var newSpellCasts = GameObjectManager.GetObjectsOfType<BattleCharacter>()
+                var newSpellCasts = GameObjectManager.GetObjectsOfType<BattleCharacter>()
                 .Where(IsValid)
                 .SelectMany(HandleNewCast)
                 .ToList();
 
-	            if (newSpellCasts.Any())
-	            {
-	                _tracked.AddRange(newSpellCasts);
+                if (newSpellCasts.Any())
+                {
+                    _tracked.AddRange(newSpellCasts);
                     //AvoidanceManager.AvoidInfos.AddRange(newSpellCasts);
-	                Logger.Info($"Added: {newSpellCasts.Count()} to the avoidance manager");
-	            }
-	        }
-	    }
+                    Logger.Info($"Added: {newSpellCasts.Count()} to the avoidance manager");
+                }
+            }
+        }
 
         private IEnumerable<AvoidInfo> HandleNewCast(BattleCharacter battleCharacter)
         {
-            if (_owners.TryGetValue((ulong) AvoiderType.Spell + battleCharacter.CastingSpellId,out var iAvoider))
+            if (_owners.TryGetValue((ulong)AvoiderType.Spell + battleCharacter.CastingSpellId, out var iAvoider))
             {
                 Logger.Verbose($"{battleCharacter.SpellCastInfo.SpellData.LocalizedName} [Spell][Id: {battleCharacter.CastingSpellId}][Omen: {battleCharacter.SpellCastInfo.SpellData.Omen}][RawCastType: {battleCharacter.SpellCastInfo.SpellData.RawCastType}][ObjId: {battleCharacter.ObjectId}]");
             }
-            else if (_owners.TryGetValue((ulong) AvoiderType.Omen + battleCharacter.SpellCastInfo.SpellData.Omen, out iAvoider))
+            else if (_owners.TryGetValue((ulong)AvoiderType.Omen + battleCharacter.SpellCastInfo.SpellData.Omen, out iAvoider))
             {
                 Logger.Verbose($"{battleCharacter.SpellCastInfo.SpellData.LocalizedName} [Omen][Id: {battleCharacter.CastingSpellId}][Omen: {battleCharacter.SpellCastInfo.SpellData.Omen}][RawCastType: {battleCharacter.SpellCastInfo.SpellData.RawCastType}][ObjId: {battleCharacter.ObjectId}]");
             }
-            else if (_owners.TryGetValue((ulong) AvoiderType.CastType + battleCharacter.SpellCastInfo.SpellData.RawCastType, out iAvoider))
+            else if (_owners.TryGetValue((ulong)AvoiderType.CastType + battleCharacter.SpellCastInfo.SpellData.RawCastType, out iAvoider))
             {
                 Logger.Verbose($"{battleCharacter.SpellCastInfo.SpellData.LocalizedName} [CastType][Id: {battleCharacter.CastingSpellId}][Omen: {battleCharacter.SpellCastInfo.SpellData.Omen}][RawCastType: {battleCharacter.SpellCastInfo.SpellData.RawCastType}][ObjId: {battleCharacter.ObjectId}]");
             }
@@ -209,7 +209,7 @@ namespace Sidestep
 
             //if (c.DistanceSqr() < 50 * 50)
             //{
-            if (c.SpellCastInfo.SpellData.Omen != 0)
+            if (c.SpellCastInfo.SpellData.Omen != 0 || OmenOverrideManager.HasOverride(c.CastingSpellId))
             {
                 if (!AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c)))
                 {

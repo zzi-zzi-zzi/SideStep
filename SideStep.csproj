@@ -109,6 +109,7 @@
     <Compile Include="Avoid\Triangles.cs" />
     <Compile Include="Avoid\CircleGeneric.cs" />
     <Compile Include="Common\Omen.cs" />
+    <Compile Include="Helpers\OmenOverrideManager.cs" />
     <Compile Include="Helpers\PerformanceLogger.cs" />
     <Compile Include="Interfaces\AvoiderAttribute.cs" />
     <Compile Include="Interfaces\AvoiderType.cs" />

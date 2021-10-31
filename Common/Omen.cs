@@ -33,19 +33,17 @@ namespace Sidestep.Common
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public float Range(BattleCharacter spellCaster, out Vector3 center)
+        public float Range(BattleCharacter spellCaster, out Vector3 center, Matrix44? forcedMatrix = null, float? forcedRange = null)
         {
             center = Vector3.Zero;
             try
             {
+                var m4X4 = forcedMatrix ?? spellCaster.OmenMatrix;
 
-                var m4x4 = spellCaster.OmenMatrix;
+                center = m4X4.Center();
+                m4X4.Transform(One, out var edge);
 
-                center = m4x4.Center();
-                m4x4.Transform(One, out var edge);
-
-                return center.Distance2D(edge);
-
+                return forcedRange ?? center.Distance2D(edge);
             }
             catch (Exception ex)
             {

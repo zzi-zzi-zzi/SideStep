@@ -5,14 +5,16 @@ You should have received a copy of the license along with this
 work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
 Orginal work done by zzi
                                                                                  */
+
+using System.Collections.Generic;
 using Clio.Utilities;
 using ff14bot.Managers;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
 using Sidestep.Common;
+using Sidestep.Helpers;
 using Sidestep.Interfaces;
 using Sidestep.Logging;
-using System.Collections.Generic;
 
 namespace Sidestep.Avoid
 {
@@ -31,7 +33,18 @@ namespace Sidestep.Avoid
                 Logger.Info("Spell range is > 45. Does this require specific logic?");
             //var loc = spellCaster.SpellCastInfo.CastLocation != Vector3.Zero ? spellCaster.SpellCastInfo.CastLocation : spellCaster.Location;
 
-            var range = Range(spellCaster, out var center);
+            Vector3 center;
+            float range = 0f;
+            if (OmenOverrideManager.TryGetOverride(spellCaster.SpellCastInfo.ActionId,out var omenOverride))
+            {
+                range = Range(spellCaster, out center,omenOverride.MatrixOverride,omenOverride.RangeOverride);
+            }
+            else
+            {
+                range = Range(spellCaster, out center);
+            }
+
+            
 
             Logger.Info($"Avoid Cirlce: [{center}][Range: {range}]");
             var cached = spellCaster.CastingSpellId;

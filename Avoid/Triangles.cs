@@ -16,6 +16,8 @@ namespace Sidestep.Avoid
 {
 
     [Avoider(AvoiderType.Omen, 80)]
+    [Avoider(AvoiderType.Omen, 38)]
+    [Avoider(AvoiderType.Omen, 56)]//this isn't perfect, the aoe appears first but the monster will spin to face it and as it spins the avoid will move with it until it reaches the end
     [Avoider(AvoiderType.Omen, 146)]
     internal class Type_glfan020 : Omen
     {
