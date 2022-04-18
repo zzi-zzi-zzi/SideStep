@@ -12,6 +12,7 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using Buddy.Coroutines;
+using Clio.Common;
 using Clio.Utilities;
 using ff14bot;
 using ff14bot.AClasses;
@@ -36,23 +37,10 @@ namespace Sidestep
     {
 
         public override string Author => "ZZI";
-        public override Version Version => new Version(3, 0);
+        public override Version Version => new Version(6, 1);
         public override string Name => "SideStep";
-        public override bool WantButton => true;
-        private bool on = false;
-
-        // public override void OnButtonPress()
-        // {
-        //    on = !on;
-        //    Logger.Info("Visuals: {0}", on);
-        //    if (on)
-        //        Overlay3D.Drawing += ff14.Visualize;
-        //    else
-        //        Overlay3D.Drawing -= ff14.Visualize;
-        // }
-
-
-
+        public override bool WantButton => false;
+        
         public override void OnInitialize()
         {
             LoadAvoidanceObjects();

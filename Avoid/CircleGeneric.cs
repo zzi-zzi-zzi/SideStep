@@ -50,12 +50,12 @@ namespace Sidestep.Avoid
             var cached = spellCaster.CastingSpellId;
 
             return new[]{ AvoidanceManager.AddAvoidLocation(
-                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
-                null,
-                40f,
-                bc => range + 0.5f,
-                bc => center,
-                () => new[] {spellCaster}
+                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached, //can run
+                () => center, //LeashPoint
+                50f, //Leash Radius
+                bc => range + 0.5f, //radiusProducer
+                bc => center, //locationProducer
+                () => new[] {spellCaster} //collectionProducer
             ) };
             
         }
