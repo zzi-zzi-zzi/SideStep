@@ -52,7 +52,36 @@ namespace Sidestep.Common
             }
         }
 
-       
+
+        /// <summary>
+        /// makes a donut thing...
+        /// </summary>
+        /// <param name="inner"></param>
+        /// <param name="outer"></param>
+        /// <param name="N"></param>
+        /// <returns></returns>
+        public Vector2[] Torus(float inner, float outer, int N = 100)
+        {
+            List<Vector2> list = new List<Vector2>();
+            List<Vector2> listb = new List<Vector2>();
+            
+            const double twopi = Math.PI * 2f;
+
+            var pos = 0f;
+            Vector2 item;
+            do
+            {
+                item = new Vector2((float) Math.Cos(twopi * pos / N), (float) -Math.Sin(twopi * pos / N)) * inner;
+                list.Add(item);
+    
+                item = new Vector2((float) Math.Cos(twopi * pos / N), (float) -Math.Sin(twopi * pos / N)) * outer;
+                listb.Add(item);
+
+                pos++;
+            } while (pos < N);
+
+            return  list.Concat(listb).ToArray();
+        }
 
         public Vector2[] Square(BattleCharacter spellCaster)
         {
