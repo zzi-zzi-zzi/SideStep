@@ -43,7 +43,7 @@ namespace FoxDen.Plugin.AvoidShit
 
         public override string Author => "Fox Den";
 
-        public override string Name => "Avoid shit";
+        public override string Name => "Avoidance Visualization";
 
         public override Version Version => new Version(1,0,0,0);
 
