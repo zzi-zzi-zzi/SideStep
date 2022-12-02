@@ -14,6 +14,7 @@ using Buddy.Coroutines;
 using ff14bot;
 using ff14bot.AClasses;
 using ff14bot.Behavior;
+using ff14bot.Enums;
 using ff14bot.Helpers;
 using ff14bot.Managers;
 using ff14bot.Navigation;
@@ -34,6 +35,8 @@ namespace Sidestep
         public override Version Version => new Version(6, 1, 2);
         public override string Name => "SideStep";
         public override bool WantButton => true;
+
+        public override string ButtonText => "Clear";
 
         public override void OnButtonPress()
         {
@@ -104,7 +107,15 @@ namespace Sidestep
                     var del = (AvoidHandler) Delegate.CreateDelegate(typeof(AvoidHandler), type);
                     foreach (var atb in atbs)
                     {
-                        _avoiders.Add(atb, del);
+                        if (!_avoiders.ContainsKey(atb))
+                        {
+                            _avoiders.Add(atb, del);
+                        }
+                        else
+                        {
+                            var existing = _avoiders[atb];
+                            Logger.Warn($"Duplicate Sidestep key for: {atb.Type} - {atb.Key} -- Matching Delegate:? {existing == del}");
+                        }
                     }
                 }
             }
@@ -206,18 +217,17 @@ namespace Sidestep
                     s.Type == AvoiderType.CastType && s.Key == cid
             );
             
-            //var omen = c.SpellCastInfo.SpellData.Omen != 0;
-            //var hasoverride = OmenOverrideManager.HasOverride(c.CastingSpellId);
             var am = AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c));
             var avoiderAttributes = allowed as AvoiderAttribute[] ?? allowed.ToArray(); //prevent multiple enumeration
             
-            Logger.Info($"[Detection] Detected Spell: {c.CastingSpellId} Omen: {avoiderAttributes.Any()} && am: {am}");
-            
-            
+            Logger.Info($"[Detection] Detected Spell: {c.CastingSpellId} Capable: {avoiderAttributes.Length} && am: {am}");
+
             if(am)
             {
                 return (Array.Empty<AvoiderAttribute>(), c);
             }
+            
+           
             
             return (avoiderAttributes, c);
         }

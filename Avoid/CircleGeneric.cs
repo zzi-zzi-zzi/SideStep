@@ -28,7 +28,6 @@ namespace Sidestep.Avoid
         [Avoider(AvoiderType.CastType, 5)]
         [Avoider(AvoiderType.Spell, 6420, Range=15f)]
         [Avoider(AvoiderType.CastType, 6)]
-        [Avoider(AvoiderType.CastType, 10)]
         public static IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster, float omenOverride = Single.NaN)
         {
             if(spellCaster.SpellCastInfo.SpellData.EffectRange > 45)
