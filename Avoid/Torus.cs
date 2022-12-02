@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Clio.Utilities;
 using ff14bot.Managers;
@@ -10,10 +11,11 @@ using Sidestep.Logging;
 
 namespace Sidestep.Avoid
 {
-    [Avoider(AvoiderType.Spell, 664)] // The Howling Eye (Normal) - Eye of the Storm
-    public class Torus : Omen
+    public class Torus
     {
-        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
+        
+        [Avoider(AvoiderType.Spell, 664)] // The Howling Eye (Normal) - Eye of the Storm
+        public static IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster, float omenOverride = Single.NaN)
         {
             if(spellCaster.SpellCastInfo.SpellData.EffectRange > 45)
                 Logger.Info("Spell range is > 45. Does this require specific logic?");
@@ -21,19 +23,19 @@ namespace Sidestep.Avoid
 
             Vector3 center;
             float range = 0f;
-            if (OmenOverrideManager.TryGetOverride(spellCaster.SpellCastInfo.ActionId,out var omenOverride))
+            if (!float.IsNaN(omenOverride))
             {
-                range = Range(spellCaster, out center, omenOverride.MatrixOverride, omenOverride.RangeOverride);
+                range = spellCaster.Range(out center, null, omenOverride);
             }
             else
             {
-                range = Range(spellCaster, out center);
+                range = spellCaster.Range(out center);
             }
 
             
             Logger.Info($"Avoid Torus: [{center}][Range: {range}][Middle: {range / 2.5}]");
             var cached = spellCaster.CastingSpellId;
-            var points = Torus(range / 2.5f, range);
+            var points = Omen.Torus(range / 2.5f, range);
             return new[]{ AvoidanceManager.AddAvoidPolygon(
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached, //can run
                 () => center, //LeashPoint

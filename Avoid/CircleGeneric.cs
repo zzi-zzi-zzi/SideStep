@@ -6,6 +6,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
 Orginal work done by zzi
                                                                                  */
 
+using System;
 using System.Collections.Generic;
 using Clio.Utilities;
 using ff14bot.Managers;
@@ -21,30 +22,29 @@ namespace Sidestep.Avoid
     /// <summary>
     /// AOE Around an object
     /// </summary>
-    [Avoider(AvoiderType.CastType, 2)]
-    [Avoider(AvoiderType.CastType, 5)]
-    [Avoider(AvoiderType.CastType, 6)]
-    [Avoider(AvoiderType.CastType, 10)]
-    public class CircleGeneric : Omen
+    public class CircleGeneric
     {
-        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
+        [Avoider(AvoiderType.CastType, 2)]
+        [Avoider(AvoiderType.CastType, 5)]
+        [Avoider(AvoiderType.Spell, 6420, Range=15f)]
+        [Avoider(AvoiderType.CastType, 6)]
+        [Avoider(AvoiderType.CastType, 10)]
+        public static IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster, float omenOverride = Single.NaN)
         {
             if(spellCaster.SpellCastInfo.SpellData.EffectRange > 45)
                 Logger.Info("Spell range is > 45. Does this require specific logic?");
             //var loc = spellCaster.SpellCastInfo.CastLocation != Vector3.Zero ? spellCaster.SpellCastInfo.CastLocation : spellCaster.Location;
 
             Vector3 center;
-            float range = 0f;
-            if (OmenOverrideManager.TryGetOverride(spellCaster.SpellCastInfo.ActionId,out var omenOverride))
+            var range = 0f;
+            if (!float.IsNaN(omenOverride))
             {
-                range = Range(spellCaster, out center,omenOverride.MatrixOverride,omenOverride.RangeOverride);
+                range = spellCaster.Range(out center, null, omenOverride);
             }
             else
             {
-                range = Range(spellCaster, out center);
+                range = spellCaster.Range(out center);
             }
-
-            
 
             Logger.Info($"Avoid Cirlce: [{center}][Range: {range}]");
             var cached = spellCaster.CastingSpellId;

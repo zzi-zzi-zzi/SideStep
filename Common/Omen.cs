@@ -8,39 +8,35 @@ Orginal work done by zzi
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using Clio.Common;
 using Clio.Utilities;
 using ff14bot;
-using ff14bot.Helpers;
 using ff14bot.Managers;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
-using GreyMagic;
-using Sidestep.Interfaces;
 using Sidestep.Logging;
 using Vector2 = Clio.Utilities.Vector2;
 using Vector3 = Clio.Utilities.Vector3;
 
 namespace Sidestep.Common
 {
-    public abstract class Omen : IAvoider
+    public static class Omen
     {
-        private readonly Vector3 One = new Vector3(0, 0, 1);
+        private static readonly Vector3 One = new Vector3(0, 0, 1);
 
         /// <summary>
         /// gets the range information using the omen data
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public float Range(BattleCharacter spellCaster, out Vector3 center, Matrix44? forcedMatrix = null, float? forcedRange = null)
+        public static float Range(this BattleCharacter spellCaster, out Vector3 center, Matrix44? forcedMatrix = null, float? forcedRange = null)
         {
             center = Vector3.Zero;
             try
             {
                 var m4X4 = forcedMatrix ?? spellCaster.OmenMatrix;
 
-                center = m4X4.Center();
+                center = m4X4.Center;
                 m4X4.Transform(One, out var edge);
 
                 return forcedRange ?? center.Distance2D(edge);
@@ -56,34 +52,28 @@ namespace Sidestep.Common
         /// <summary>
         /// makes a donut thing...
         /// </summary>
-        /// <param name="inner"></param>
-        /// <param name="outer"></param>
-        /// <param name="N"></param>
+        /// <param name="outerRadius"></param>
+        /// <param name="innerRadius"></param>
+        /// <param name="pointCount"></param>
         /// <returns></returns>
-        public Vector2[] Torus(float inner, float outer, int N = 100)
+        public static Vector2[] Torus(double outerRadius, double innerRadius, int pointCount = 64)
         {
-            List<Vector2> list = new List<Vector2>();
-            List<Vector2> listb = new List<Vector2>();
-            
-            const double twopi = Math.PI * 2f;
+            List<Vector2> outerPoints = new((pointCount * 2) + 1);
+            List<Vector2> innerPoints = new(pointCount + 1);
 
-            var pos = 0f;
-            Vector2 item;
-            do
+            var tau = 2.0 * Math.PI; // No official Math.Tau before .NET 5
+            var step = tau / pointCount;
+
+            for (double theta = 0; theta < tau; theta += step)
             {
-                item = new Vector2((float) Math.Cos(twopi * pos / N), (float) -Math.Sin(twopi * pos / N)) * inner;
-                list.Add(item);
-    
-                item = new Vector2((float) Math.Cos(twopi * pos / N), (float) -Math.Sin(twopi * pos / N)) * outer;
-                listb.Add(item);
+                outerPoints.Add(new Vector2((float)(outerRadius * Math.Cos(theta)), (float)(outerRadius * Math.Sin(theta))));
+                innerPoints.Add(new Vector2((float)(innerRadius * Math.Cos(theta)), (float)(innerRadius * Math.Sin(theta))));
+            }
 
-                pos++;
-            } while (pos < N);
-
-            return  list.Concat(listb).ToArray();
+            return outerPoints.Concat(innerPoints).ToArray();
         }
 
-        public Vector2[] Square(BattleCharacter spellCaster)
+        public static Vector2[] Square(this BattleCharacter spellCaster)
         {
             try
             {
@@ -105,16 +95,16 @@ namespace Sidestep.Common
             }
         }
 
-        public IEnumerable<AvoidInfo> AddCone(BattleCharacter spellCaster, float arcDegrees)
+        public static IEnumerable<AvoidInfo> AddCone(this BattleCharacter spellCaster, float arcDegrees, Matrix44? forcedMatrix = null)
         {
             try
             {
                 var cachedSpell = spellCaster.CastingSpellId;
-                var m4x4 = spellCaster.OmenMatrix;
+                var m4x4 = forcedMatrix ?? spellCaster.OmenMatrix;
 
                 //sin(0), 0, cos(0)
                 m4x4.Transform(new Vector3(0, 0, 1), out var transformed);
-                var center = m4x4.Center();
+                var center = m4x4.Center;
                
                 var depth = transformed.Distance2D(center);
                 var d = transformed - center;
@@ -151,67 +141,6 @@ namespace Sidestep.Common
                 Logger.Error("failed to make cone: {0}", ex);
                 return null;
             }
-        }
-
-        public IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster)
-        {
-            if (spellCaster.OmenProjectionPtr == IntPtr.Zero)
-            {
-                Logger.Info("Cast contains no Projection data.");
-                return null;
-            }
-            return OmenHandle(spellCaster);
-        }
-
-        public abstract IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster);
-    }
-
-    public static class m4x4Ext
-    {
-
-        public static Vector3 Center(this Matrix44 matrix)
-        {
-            return new Vector3(matrix.M30, matrix.M31, matrix.M32);
-        }
-
-        public static Vector2 Transform2d(this Matrix44 matrix, Vector2 from)
-        {
-            var transformed = new Vector2();
-            transformed.X = from.X * matrix.M00 +
-                            //from.Y * matrix.M10 +
-                            from.Y * matrix.M20
-                            //+
-                            //matrix.M30
-                            ;
-
-            transformed.Y = from.X * matrix.M02 +
-                            //from.Y * matrix.M12 +
-                            from.Y * matrix.M22
-                            //+
-                            //matrix.M32
-                            ;
-
-            return transformed;
-
-        }
-        public static void Transform(this Matrix44 matrix, Vector3 from, out Vector3 transformed)
-        {
-            transformed = new Vector3();
-
-            transformed.X = from.X * matrix.M00 +
-                            from.Y * matrix.M10 +
-                            from.Z * matrix.M20 +
-                            matrix.M30;
-
-            transformed.Y = from.X * matrix.M01 +
-                            from.Y * matrix.M11 +
-                            from.Z * matrix.M21 +
-                            matrix.M31;
-
-            transformed.Z = from.X * matrix.M02 +
-                            from.Y * matrix.M12 +
-                            from.Z * matrix.M22 +
-                            matrix.M32;
         }
     }
 }

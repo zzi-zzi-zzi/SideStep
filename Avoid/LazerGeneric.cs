@@ -6,17 +6,11 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
 Orginal work done by zzi
                                                                                  */
 using System;
-using System.Threading.Tasks;
-using Clio.Common;
-using Clio.Utilities;
-using ff14bot;
-using ff14bot.Helpers;
 using ff14bot.Managers;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
 using Sidestep.Common;
 using Sidestep.Interfaces;
-using Sidestep.Helpers;
 using System.Collections.Generic;
 
 namespace Sidestep.Avoid
@@ -25,66 +19,49 @@ namespace Sidestep.Avoid
     /// lazer beam type
     /// </summary>
     
-    [Avoider(AvoiderType.CastType, 12)] //found in Eureka
-    [Avoider(AvoiderType.Spell, 9198)] //Found in Ala Mhigo (Dungeon) - Cast by 12th Legion Roader on spawn before the first boss. 
-    [Avoider(AvoiderType.CastType, 4)]
-    public class LazerGeneric : Omen
+    public class Lazer
     {
-
-        //public async Task<bool> Handle(SpellCast spellCaster)
-        //{
-
-        //    var res = inside(spellCaster.CasterLocation, spellCaster.CasterHeading, spellCaster.Data.EffectRange,
-        //        spellCaster.Data.XAxisModified > 0 ? spellCast.Data.XAxisModified : spellCaster.Caster.CombatReach);
-        //    if (res.Item1)
-        //    {
-        //        await Help.MoveTo(res.Item2, spellCaster);
-        //    }
-        //    return Core.Me.IsMelee();
-        //}
-
-        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
+        
+        [Avoider(AvoiderType.CastType, 12)] //found in Eureka
+        [Avoider(AvoiderType.Spell, 9198)] //Found in Ala Mhigo (Dungeon) - Cast by 12th Legion Roader on spawn before the first boss. 
+        [Avoider(AvoiderType.CastType, 4)]
+        public static IEnumerable<AvoidInfo> LazerGeneric(BattleCharacter spellCaster, float rangeOverride = Single.NaN)
         {
             var cached = spellCaster.CastingSpellId;
             //var rotation = Rotation(spellCaster);
             //var cl = spellCaster.SpellCastInfo.CastLocation;
-            var square = Square(spellCaster);
+            var square = spellCaster.Square();
 
             return new[]{ AvoidanceManager.AddAvoidPolygon(
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
-                bc => 0f, //rotation
-                bc => 1.0f, //scale
-                bc => 15.0f, //height
-                bc => square, //points
-                bc => spellCaster.Location,
+                _ => 0f, //rotation
+                _ => 1.0f, //scale
+                _ => 15.0f, //height
+                _ => square, //points
+                _ => spellCaster.Location,
                 () => new[] {spellCaster} //objs
             ) };
 
-
         }
         
-    }
-
-    [Avoider(AvoiderType.Omen, 188)]
-    public class Cross : Omen
-    {
-        public override IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster)
+        [Avoider(AvoiderType.Omen, 188)]
+        public static IEnumerable<AvoidInfo> Cross(BattleCharacter spellCaster, float rangeOverride = Single.NaN)
         {
             var cached = spellCaster.CastingSpellId;
-            var square = Square(spellCaster);
+            var square = spellCaster.Square();
             var result = new List<AvoidInfo>();
 
             result.Add(AvoidanceManager.AddAvoidPolygon(
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
-                bc => 0f, //rotation
-                bc => 1.0f, //scale
-                bc => 15.0f, //height
-                bc => square, //points
-                bc => spellCaster.Location,
+                _ => 0f, //rotation
+                _ => 1.0f, //scale
+                _ => 15.0f, //height
+                _ => square, //points
+                _ => spellCaster.Location,
                 () => new[] { spellCaster } //objs
             ));
 
@@ -92,38 +69,39 @@ namespace Sidestep.Avoid
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
-                bc => (float)Math.PI, //rotation
-                bc => 1.0f, //scale
-                bc => 15.0f, //height
-                bc => square, //points
-                bc => spellCaster.Location,
+                _ => (float)Math.PI, //rotation
+                _ => 1.0f, //scale
+                _ => 15.0f, //height
+                _ => square, //points
+                _ => spellCaster.Location,
                 () => new[] { spellCaster } //objs
             ));
             result.Add(AvoidanceManager.AddAvoidPolygon(
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
-                bc => - (float)Math.PI / 2, //rotation
-                bc => 1.0f, //scale
-                bc => 15.0f, //height
-                bc => square, //points
-                bc => spellCaster.Location,
+                _ => - (float)Math.PI / 2, //rotation
+                _ => 1.0f, //scale
+                _ => 15.0f, //height
+                _ => square, //points
+                _ => spellCaster.Location,
                 () => new[] { spellCaster } //objs
             ));
             result.Add(AvoidanceManager.AddAvoidPolygon(
                 () => spellCaster.IsValid && spellCaster.CastingSpellId == cached,
                 null,
                 40f,
-                bc => (float)Math.PI / 2, //rotation
-                bc => 1.0f, //scale
-                bc => 15.0f, //height
-                bc => square, //points
-                bc => spellCaster.Location,
+                _ => (float)Math.PI / 2, //rotation
+                _ => 1.0f, //scale
+                _ => 15.0f, //height
+                _ => square, //points
+                _ => spellCaster.Location,
                 () => new[] { spellCaster } //objs
             ));
 
 
             return result;
         }
+        
     }
 }

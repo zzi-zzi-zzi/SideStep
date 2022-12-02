@@ -6,20 +6,20 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
 Orginal work done by zzi
                                                                                  */
 using System;
-using System.Windows.Forms.VisualStyles;
 
 namespace Sidestep.Interfaces
 {
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class AvoiderAttribute : Attribute
     {
-        public AvoiderType Type;
-        public uint Key;
-
+        public AvoiderType Type{ get; set; }
+        public uint Key{ get; set; }
         public AvoiderAttribute(AvoiderType type, uint key)
         {
             Type = type;
             Key = key;
         }
+
+        public float Range { get; set; } = Single.NaN;
     }
 }

@@ -11,6 +11,7 @@
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <LangVersion>10</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -72,10 +73,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="GreyMagic, Version=1.0.0.0, Culture=neutral, PublicKeyToken=260525fa2b0e778a">
-      <HintPath>..\..\..\..\..\RB\GreyMagic.dll</HintPath>
+      <HintPath>C:\RB\GreyMagic.dll</HintPath>
     </Reference>
     <Reference Include="PresentationFramework" />
-    <Reference Include="RebornBuddy, Version=1.0.488.0, Culture=neutral, PublicKeyToken=48d7174f8a943034">
+    <Reference Include="RebornBuddy">
       <HintPath>..\..\..\..\..\RB\RebornBuddy.exe</HintPath>
     </Reference>
     <Reference Include="System.Drawing" />
@@ -96,12 +97,12 @@
     <Compile Include="Avoid\Torus.cs" />
     <Compile Include="Avoid\Triangles.cs" />
     <Compile Include="Avoid\CircleGeneric.cs" />
+    <Compile Include="Common\M4X4Ext.cs" />
     <Compile Include="Common\Omen.cs" />
     <Compile Include="Helpers\OmenOverrideManager.cs" />
     <Compile Include="Helpers\PerformanceLogger.cs" />
     <Compile Include="Interfaces\AvoiderAttribute.cs" />
     <Compile Include="Interfaces\AvoiderType.cs" />
-    <Compile Include="Interfaces\IAvoider.cs" />
     <Compile Include="SidestepPlugin.cs" />
     <Compile Include="AvoidanceVis.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
