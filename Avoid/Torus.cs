@@ -13,8 +13,9 @@ namespace Sidestep.Avoid
 {
     public class Torus
     {
-        
         [Avoider(AvoiderType.Spell, 664)] // The Howling Eye (Normal) - Eye of the Storm
+        [Avoider(AvoiderType.CastType, 10)] // Torus types. 
+        
         public static IEnumerable<AvoidInfo> OmenHandle(BattleCharacter spellCaster, float omenOverride = Single.NaN)
         {
             if(spellCaster.SpellCastInfo.SpellData.EffectRange > 45)

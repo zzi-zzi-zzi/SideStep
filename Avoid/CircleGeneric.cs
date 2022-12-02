@@ -13,12 +13,12 @@ using ff14bot.Managers;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
 using Sidestep.Common;
-using Sidestep.Helpers;
 using Sidestep.Interfaces;
 using Sidestep.Logging;
 
 namespace Sidestep.Avoid
 {
+
     /// <summary>
     /// AOE Around an object
     /// </summary>
@@ -58,6 +58,31 @@ namespace Sidestep.Avoid
                 () => new[] {spellCaster} //collectionProducer
             ) };
             
+        }
+
+        [Avoider(AvoiderType.Spell, 31234)] // Body Slam - Handeling this as Torus due to the knockback. 
+        public static IEnumerable<AvoidInfo> BodySlam31234(BattleCharacter spellCaster, float _ = Single.NaN)
+        {
+            Vector3 center;
+            float range = spellCaster.Range(out center);
+
+            Logger.Info($"Body Slam: [{center}][Range: {range}][Middle: {range / 2.5}]");
+            var cached = spellCaster.CastingSpellId;
+            var points = Omen.Torus(range / 2.5f, 50);
+            return new[]
+            {
+                AvoidanceManager.AddAvoidPolygon(
+                    () => spellCaster.IsValid && spellCaster.CastingSpellId == cached, //can run
+                    () => center, //LeashPoint
+                    50f, //Leash Radius
+                    bc => 0f, // Rotation
+                    bc => 1.0f, // Scale
+                    bc => 1.0f, //height
+                    bc => points, //radiusProducer
+                    bc => center, //locationProducer
+                    () => new[] {spellCaster} //collectionProducer
+                )
+            };
         }
     }
 }
