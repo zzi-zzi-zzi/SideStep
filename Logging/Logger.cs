@@ -9,6 +9,7 @@ using System;
 using System.Globalization;
 using System.Reflection;
 using Clio.Utilities;
+using ff14bot.Helpers;
 using Sidestep.Helpers;
 using rLogging = ff14bot.Helpers.Logging;
 
@@ -35,7 +36,7 @@ namespace Sidestep.Logging
         [StringFormatMethod("format")]
         internal static void Verbose(string format, params object[] args)
         {
-            rLogging.WriteVerbose(LogColors.Verbose, Prefix + string.Format(CultureInfo.InvariantCulture, format, args));
+            rLogging.WriteToFileSync(LogLevel.Verbose, Prefix + string.Format(CultureInfo.InvariantCulture, format, args));
         }
         
         [StringFormatMethod("format")]
