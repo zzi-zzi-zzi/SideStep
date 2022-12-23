@@ -220,14 +220,12 @@ namespace Sidestep
             var am = AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c));
             var avoiderAttributes = allowed as AvoiderAttribute[] ?? allowed.ToArray(); //prevent multiple enumeration
             
-            Logger.Info($"[Detection] Detected Spell: {c.CastingSpellId} Capable: {avoiderAttributes.Length} && am: {am}");
+            Logger.Verbose($"[Detection] Detected Spell: {c.CastingSpellId} Capable: {avoiderAttributes.Length} && am: {am}");
 
             if(am)
             {
                 return (Array.Empty<AvoiderAttribute>(), c);
             }
-            
-           
             
             return (avoiderAttributes, c);
         }
