@@ -128,6 +128,10 @@ namespace Sidestep
             //don't run if we don't have a navigation provider
             if (Navigator.NavigationProvider == null)
                 return;
+            
+            // don't run if we can't do combat
+            if (WorldManager.InSanctuary)
+                return;
 
             using (new PerformanceLogger("Pulse"))
             {
