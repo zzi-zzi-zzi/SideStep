@@ -14,10 +14,10 @@ using Buddy.Coroutines;
 using ff14bot;
 using ff14bot.AClasses;
 using ff14bot.Behavior;
-using ff14bot.Enums;
 using ff14bot.Helpers;
 using ff14bot.Managers;
 using ff14bot.Navigation;
+using ff14bot.NeoProfiles;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
 using Sidestep.Helpers;
@@ -27,10 +27,8 @@ using TreeSharp;
 
 namespace Sidestep
 {
-
     public class Sidestep : BotPlugin
     {
-
         public override string Author => "ZZI";
         public override Version Version => new Version(6, 1, 2);
         public override string Name => "SideStep";
@@ -47,19 +45,44 @@ namespace Sidestep
         {
             LoadAvoidanceObjects();
         }
+
         public override void OnEnabled()
         {
             Logger.Verbose("Sidestep has been Enabled");
-
+            TreeRoot.OnStart += OnStart;
+            TreeRoot.OnStop += OnStop;
+            GameEvents.OnMapChanged += OnMapChanged;
             TreeHooks.Instance.OnHooksCleared += ReHookAvoid;
             ReHookAvoid(null, null);
         }
+
+        private void OnMapChanged(object sender, EventArgs e)
+        {
+            _tracked.Clear();
+        }
+
+        private void OnStop(BotBase bot)
+        {
+            _tracked.Clear();
+        }
+
+        private void OnStart(BotBase bot)
+        {
+            _tracked.Clear();
+        }
+
         public override void OnDisabled()
         {
             Logger.Verbose("Sidestep has been Disabled");
             if (s_hook != null)
                 TreeHooks.Instance.RemoveHook("TreeStart", s_hook);
+
             TreeHooks.Instance.OnHooksCleared -= ReHookAvoid;
+            TreeRoot.OnStart -= OnStart;
+            TreeRoot.OnStop -= OnStop;
+            GameEvents.OnMapChanged -= OnMapChanged;
+
+            _tracked.Clear();
         }
 
         private static ActionRunCoroutine s_hook;
@@ -85,15 +108,18 @@ namespace Sidestep
                                   !AvoidanceManager.Avoids.Any(o => o.IsPointInAvoid(Poi.Current.Location)));
                     }
                 }
+
                 return false;
             });
 
             TreeHooks.Instance.InsertHook("TreeStart", 0, s_hook);
         }
 
-        public delegate IEnumerable<AvoidInfo> AvoidHandler(BattleCharacter spellCaster, float rangeOverride = Single.NaN);
+        public delegate IEnumerable<AvoidInfo> AvoidHandler(BattleCharacter spellCaster,
+            float rangeOverride = Single.NaN);
 
         private Dictionary<AvoiderAttribute, AvoidHandler> _avoiders = new();
+
         private void LoadAvoidanceObjects()
         {
             using (new PerformanceLogger("LoadAvoidanceObjects"))
@@ -104,7 +130,7 @@ namespace Sidestep
                 foreach (var type in funcs)
                 {
                     var atbs = type.GetCustomAttributes<AvoiderAttribute>();
-                    var del = (AvoidHandler) Delegate.CreateDelegate(typeof(AvoidHandler), type);
+                    var del = (AvoidHandler)Delegate.CreateDelegate(typeof(AvoidHandler), type);
                     foreach (var atb in atbs)
                     {
                         if (!_avoiders.ContainsKey(atb))
@@ -114,7 +140,8 @@ namespace Sidestep
                         else
                         {
                             var existing = _avoiders[atb];
-                            Logger.Warn($"Duplicate Sidestep key for: {atb.Type} - {atb.Key} -- Matching Delegate:? {existing == del}");
+                            Logger.Warn(
+                                $"Duplicate Sidestep key for: {atb.Type} - {atb.Key} -- Matching Delegate:? {existing == del}");
                         }
                     }
                 }
@@ -122,13 +149,13 @@ namespace Sidestep
         }
 
         private readonly List<AvoidInfo> _tracked = new();
-        
+
         public override void OnPulse()
         {
             //don't run if we don't have a navigation provider
             if (Navigator.NavigationProvider == null)
                 return;
-            
+
             // don't run if we can't do combat
             if (WorldManager.InSanctuary)
                 return;
@@ -136,7 +163,8 @@ namespace Sidestep
             using (new PerformanceLogger("Pulse"))
             {
                 //remove tracked avoidances that have completed
-                var removable = _tracked.Where(i => !i.Condition() && AvoidanceManager.Avoids.All(z => z.AvoidInfo != i)).ToList();
+                var removable = _tracked
+                    .Where(i => !i.Condition() && AvoidanceManager.Avoids.All(z => z.AvoidInfo != i)).ToList();
 
                 if (removable.Any())
                 {
@@ -147,9 +175,9 @@ namespace Sidestep
 
 
                 var newSpellCasts = GameObjectManager.GetObjectsOfType<BattleCharacter>()
-                .Select(IsValid)
-                .SelectMany(HandleNewCast)
-                .ToList();
+                    .Select(IsValid)
+                    .SelectMany(HandleNewCast)
+                    .ToList();
 
                 if (newSpellCasts.Any())
                 {
@@ -160,51 +188,55 @@ namespace Sidestep
             }
         }
 
-        private IEnumerable<AvoidInfo> HandleNewCast((IEnumerable<AvoiderAttribute>, BattleCharacter) BX )
+        private IEnumerable<AvoidInfo> HandleNewCast((IEnumerable<AvoiderAttribute>, BattleCharacter) BX)
         {
             var attributes = BX.Item1;
             var c = BX.Item2;
 
             if (c == null || !c.IsValid)
                 return Array.Empty<AvoidInfo>();
-            
-            var avoiderAttributes = attributes as AvoiderAttribute[] ?? attributes.ToArray();
+
+            var avoiderAttributes = attributes.ToArray();
 
             if (avoiderAttributes.Length == 0)
                 return Array.Empty<AvoidInfo>();
-            
+
             AvoiderAttribute avoiderAttribute;
-            
+
             if (avoiderAttributes.Any(t => t.Type == AvoiderType.Spell))
             {
                 avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.Spell);
-                Logger.Verbose($"{c.SpellCastInfo.SpellData.LocalizedName} [Spell][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+                Logger.Verbose(
+                    $"{c.SpellCastInfo.SpellData.LocalizedName} [Spell][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
             }
             else if (avoiderAttributes.Any(t => t.Type == AvoiderType.Omen))
             {
                 avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.Omen);
-                Logger.Verbose($"{c.SpellCastInfo.SpellData.LocalizedName} [Omen][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+                Logger.Verbose(
+                    $"{c.SpellCastInfo.SpellData.LocalizedName} [Omen][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
             }
             else if (avoiderAttributes.Any(t => t.Type == AvoiderType.CastType))
             {
                 avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.CastType);
-                Logger.Verbose($"{c.SpellCastInfo.SpellData.LocalizedName} [CastType][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+                Logger.Verbose(
+                    $"{c.SpellCastInfo.SpellData.LocalizedName} [CastType][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
             }
             else
             {
-                Logger.Verbose($"No Avoid info for: {c.SpellCastInfo.SpellData.LocalizedName} [None][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+                Logger.Verbose(
+                    $"No Avoid info for: {c.SpellCastInfo.SpellData.LocalizedName} [None][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
                 return Array.Empty<AvoidInfo>();
             }
 
             var handle = _avoiders[avoiderAttribute];
-            
+
             return handle(c, avoiderAttribute.Range);
         }
 
+        private readonly HashSet<(uint, uint)> _loggedSpells = new();
 
         private (IEnumerable<AvoiderAttribute>, BattleCharacter) IsValid(BattleCharacter c)
         {
-
             if (c.IsMe)
                 return (Array.Empty<AvoiderAttribute>(), c);
 
@@ -214,23 +246,29 @@ namespace Sidestep
             var oid = c.SpellCastInfo.SpellData.Omen;
             var spid = c.CastingSpellId;
             var cid = c.SpellCastInfo.SpellData.RawCastType;
-            
-            var allowed = _avoiders.Keys.Where(s => 
-                    s.Type == AvoiderType.Omen && s.Key == oid ||
-                    s.Type == AvoiderType.Spell && s.Key == spid ||
-                    s.Type == AvoiderType.CastType && s.Key == cid
-            );
-            
-            var am = AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c));
-            var avoiderAttributes = allowed as AvoiderAttribute[] ?? allowed.ToArray(); //prevent multiple enumeration
-            
-            Logger.Verbose($"[Detection] Detected Spell: {c.CastingSpellId} Capable: {avoiderAttributes.Length} && am: {am}");
 
-            if(am)
+            var allowed = _avoiders.Keys.Where(s =>
+                s.Type == AvoiderType.Omen && s.Key == oid ||
+                s.Type == AvoiderType.Spell && s.Key == spid ||
+                s.Type == AvoiderType.CastType && s.Key == cid
+            );
+
+            var am = AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c));
+            var avoiderAttributes = allowed.ToArray(); //prevent multiple enumeration
+
+            if (!_loggedSpells.Contains((c.NpcId, c.CastingSpellId)))
+            {
+                Logger.Verbose(
+                    $"[Detection] Detected Spell: {c.CastingSpellId} Capable: {avoiderAttributes.Length} && am: {am}");
+                _loggedSpells.Add((c.NpcId, c.CastingSpellId));
+            }
+
+            if (am)
             {
                 return (Array.Empty<AvoiderAttribute>(), c);
             }
-            
+
+
             return (avoiderAttributes, c);
         }
     }
