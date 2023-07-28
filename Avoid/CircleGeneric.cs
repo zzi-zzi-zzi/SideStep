@@ -18,7 +18,6 @@ using Sidestep.Logging;
 
 namespace Sidestep.Avoid
 {
-
     /// <summary>
     /// AOE Around an object
     /// </summary>
@@ -26,11 +25,11 @@ namespace Sidestep.Avoid
     {
         [Avoider(AvoiderType.CastType, 2)]
         [Avoider(AvoiderType.CastType, 5)]
-        [Avoider(AvoiderType.Spell, 6420, Range=15f)]
+        [Avoider(AvoiderType.Spell, 6420, Range = 15f)]
         [Avoider(AvoiderType.CastType, 6)]
         public static IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster, float omenOverride = Single.NaN)
         {
-            if(spellCaster.SpellCastInfo.SpellData.EffectRange > 45)
+            if (spellCaster.SpellCastInfo.SpellData.EffectRange > 45)
                 Logger.Info("Spell range is > 45. Does this require specific logic?");
             //var loc = spellCaster.SpellCastInfo.CastLocation != Vector3.Zero ? spellCaster.SpellCastInfo.CastLocation : spellCaster.Location;
 
@@ -45,18 +44,20 @@ namespace Sidestep.Avoid
                 range = spellCaster.Range(out center);
             }
 
-            Logger.Info($"Avoid Cirlce: [{center}][Range: {range}]");
+            Logger.Info($"Avoid Cirlce: [{center}][Range: {range}] [{spellCaster.CastingSpellId}]");
             var cached = spellCaster.CastingSpellId;
 
-            return new[]{ AvoidanceManager.AddAvoidLocation(
-                () => spellCaster.IsValid && spellCaster.CastingSpellId == cached, //can run
-                () => center, //LeashPoint
-                50f, //Leash Radius
-                bc => range + 0.5f, //radiusProducer
-                bc => center, //locationProducer
-                () => new[] {spellCaster} //collectionProducer
-            ) };
-            
+            return new[]
+            {
+                AvoidanceManager.AddAvoidLocation(
+                    () => spellCaster.IsValid && spellCaster.CastingSpellId == cached, //can run
+                    () => center, //LeashPoint
+                    50f, //Leash Radius
+                    bc => range + 0.5f, //radiusProducer
+                    bc => center, //locationProducer
+                    () => new[] { spellCaster } //collectionProducer
+                )
+            };
         }
 
         [Avoider(AvoiderType.Spell, 31234)] // Body Slam - Handeling this as Torus due to the knockback. 
@@ -79,7 +80,7 @@ namespace Sidestep.Avoid
                     bc => 1.0f, //height
                     bc => points, //radiusProducer
                     bc => center, //locationProducer
-                    () => new[] {spellCaster} //collectionProducer
+                    () => new[] { spellCaster } //collectionProducer
                 )
             };
         }

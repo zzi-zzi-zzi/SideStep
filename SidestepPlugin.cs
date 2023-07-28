@@ -14,6 +14,7 @@ using Buddy.Coroutines;
 using ff14bot;
 using ff14bot.AClasses;
 using ff14bot.Behavior;
+using ff14bot.Enums;
 using ff14bot.Helpers;
 using ff14bot.Managers;
 using ff14bot.Navigation;
@@ -241,6 +242,8 @@ namespace Sidestep
                 return (Array.Empty<AvoiderAttribute>(), c);
 
             if (c.CastingSpellId == 0)
+                return (Array.Empty<AvoiderAttribute>(), c);
+            if (!c.StatusFlags.HasFlag(StatusFlags.Hostile))
                 return (Array.Empty<AvoiderAttribute>(), c);
 
             var oid = c.SpellCastInfo.SpellData.Omen;

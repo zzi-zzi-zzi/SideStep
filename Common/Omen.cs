@@ -5,6 +5,7 @@ You should have received a copy of the license along with this
 work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
 Orginal work done by zzi
                                                                                  */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,8 +16,6 @@ using ff14bot.Managers;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
 using Sidestep.Logging;
-using Vector2 = Clio.Utilities.Vector2;
-using Vector3 = Clio.Utilities.Vector3;
 
 namespace Sidestep.Common
 {
@@ -29,7 +28,8 @@ namespace Sidestep.Common
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static float Range(this BattleCharacter spellCaster, out Vector3 center, Matrix44? forcedMatrix = null, float? forcedRange = null)
+        public static float Range(this BattleCharacter spellCaster, out Vector3 center, Matrix44? forcedMatrix = null,
+            float? forcedRange = null)
         {
             center = Vector3.Zero;
             try
@@ -66,8 +66,10 @@ namespace Sidestep.Common
 
             for (double theta = 0; theta < tau; theta += step)
             {
-                outerPoints.Add(new Vector2((float)(outerRadius * Math.Cos(theta)), (float)(outerRadius * Math.Sin(theta))));
-                innerPoints.Add(new Vector2((float)(innerRadius * Math.Cos(theta)), (float)(innerRadius * Math.Sin(theta))));
+                outerPoints.Add(new Vector2((float)(outerRadius * Math.Cos(theta)),
+                    (float)(outerRadius * Math.Sin(theta))));
+                innerPoints.Add(new Vector2((float)(innerRadius * Math.Cos(theta)),
+                    (float)(innerRadius * Math.Sin(theta))));
             }
 
             return outerPoints.Concat(innerPoints).ToArray();
@@ -95,7 +97,8 @@ namespace Sidestep.Common
             }
         }
 
-        public static IEnumerable<AvoidInfo> AddCone(this BattleCharacter spellCaster, float arcDegrees, Matrix44? forcedMatrix = null)
+        public static IEnumerable<AvoidInfo> AddCone(this BattleCharacter spellCaster, float arcDegrees,
+            Matrix44? forcedMatrix = null)
         {
             try
             {
@@ -105,10 +108,10 @@ namespace Sidestep.Common
                 //sin(0), 0, cos(0)
                 m4x4.Transform(new Vector3(0, 0, 1), out var transformed);
                 var center = m4x4.Center;
-               
+
                 var depth = transformed.Distance2D(center);
                 var d = transformed - center;
-                
+
                 var rot = MathEx.Rotation(d);
 
                 var rad = (float)Math.Round(MathEx.NormalizeRadian(rot - spellCaster.Heading), 2);
@@ -117,24 +120,27 @@ namespace Sidestep.Common
                 Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rad);
 
 
-                return new[]{ AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
-                    () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
-                    bc => bc.ObjectId == spellCaster.ObjectId, //object selector
-                    () => me, //LeashPoint
-                    120, //leash size
-                    rad, //rotation
-                    depth, //radius / Depth
-                    arcDegrees * 1.55f, //arcDegrees
-                    bc => bc.Location
+                return new[]
+                {
+                    AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
+                        () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
+                        bc => bc.ObjectId == spellCaster.ObjectId, //object selector
+                        () => me, //LeashPoint
+                        120, //leash size
+                        rad, //rotation
+                        depth, //radius / Depth
+                        arcDegrees * 1.55f, //arcDegrees
+                        bc => bc.Location
                     ),
-                    
-                    //add something under the mob so we don't get hit by standing at the mobs location.
+
                     AvoidanceManager.AddAvoidLocation(
                         () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
-                        spellCaster.CombatReach / 2,
-                        () => spellCaster.Location
+                        c => c.CombatReach / 2, //radiusProducer
+                        c => c.Location, //locationProducer
+                        () => new[] { spellCaster },
+                        c => c.IsValid && c.CastingSpellId == cachedSpell
                     )
-                    }; 
+                };
             }
             catch (Exception ex)
             {
