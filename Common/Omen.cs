@@ -28,8 +28,7 @@ namespace Sidestep.Common
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public static float Range(this BattleCharacter spellCaster, out Vector3 center, Matrix44? forcedMatrix = null,
-            float? forcedRange = null)
+        public static float Range(this BattleCharacter spellCaster, out Vector3 center, Matrix44? forcedMatrix = null)
         {
             center = Vector3.Zero;
             try
@@ -39,7 +38,7 @@ namespace Sidestep.Common
                 center = m4X4.Center;
                 m4X4.Transform(One, out var edge);
 
-                return forcedRange ?? center.Distance2D(edge);
+                return center.Distance2D(edge);
             }
             catch (Exception ex)
             {

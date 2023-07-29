@@ -8,7 +8,6 @@ Orginal work done by zzi
 
 using System;
 using System.Collections.Generic;
-using Clio.Utilities;
 using ff14bot.Managers;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
@@ -33,18 +32,11 @@ namespace Sidestep.Avoid
                 Logger.Info("Spell range is > 45. Does this require specific logic?");
             //var loc = spellCaster.SpellCastInfo.CastLocation != Vector3.Zero ? spellCaster.SpellCastInfo.CastLocation : spellCaster.Location;
 
-            Vector3 center;
-            var range = 0f;
-            if (!float.IsNaN(omenOverride))
-            {
-                range = spellCaster.Range(out center, null, omenOverride);
-            }
-            else
-            {
-                range = spellCaster.Range(out center);
-            }
+            var center = spellCaster.OmenMatrix.Center;
+            var range = !float.IsNaN(omenOverride) ? omenOverride : spellCaster.Range(out center);
 
-            Logger.Info($"Avoid Cirlce: [{center}][Range: {range}] [{spellCaster.CastingSpellId}]");
+            Logger.Info(
+                $"Avoid Circle: [{center}][Range: {range}] [{spellCaster.CastingSpellId}][Override: {omenOverride}");
             var cached = spellCaster.CastingSpellId;
 
             return new[]
@@ -60,11 +52,10 @@ namespace Sidestep.Avoid
             };
         }
 
-        [Avoider(AvoiderType.Spell, 31234)] // Body Slam - Handeling this as Torus due to the knockback. 
+        [Avoider(AvoiderType.Spell, 31234)] // Body Slam - Handling this as Torus due to the knock back. 
         public static IEnumerable<AvoidInfo> BodySlam31234(BattleCharacter spellCaster, float _ = Single.NaN)
         {
-            Vector3 center;
-            float range = spellCaster.Range(out center);
+            var range = spellCaster.Range(out var center);
 
             Logger.Info($"Body Slam: [{center}][Range: {range}][Middle: {range / 2.5}]");
             var cached = spellCaster.CastingSpellId;
