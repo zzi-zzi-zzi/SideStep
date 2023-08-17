@@ -8,6 +8,7 @@ Orginal work done by zzi
 
 using System;
 using System.Collections.Generic;
+using Clio.Utilities;
 using ff14bot.Managers;
 using ff14bot.Objects;
 using ff14bot.Pathing.Avoidance;
@@ -35,8 +36,11 @@ namespace Sidestep.Avoid
             var center = spellCaster.OmenMatrix.Center;
             var range = !float.IsNaN(omenOverride) ? omenOverride : spellCaster.Range(out center);
 
+            if (center == Vector3.Zero && range == 0)
+                return Array.Empty<AvoidInfo>();
+
             Logger.Info(
-                $"Avoid Circle: [{center}][Range: {range}] [{spellCaster.CastingSpellId}][Override: {omenOverride}");
+                $"Avoid Circle: [{center}][Range: {range}] [{spellCaster.CastingSpellId}][Override: {omenOverride}]");
             var cached = spellCaster.CastingSpellId;
 
             return new[]

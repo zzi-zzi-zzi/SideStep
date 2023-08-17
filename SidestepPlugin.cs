@@ -6,6 +6,7 @@ work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
 Orginal work done by zzi
                                                                                  */
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,8 +75,8 @@ namespace Sidestep
         public override void OnDisabled()
         {
             Logger.Verbose("Sidestep has been Disabled");
-            if (s_hook != null)
-                TreeHooks.Instance.RemoveHook("TreeStart", s_hook);
+            if (_sHook != null)
+                TreeHooks.Instance.RemoveHook("TreeStart", _sHook);
 
             TreeHooks.Instance.OnHooksCleared -= ReHookAvoid;
             TreeRoot.OnStart -= OnStart;
@@ -85,11 +86,11 @@ namespace Sidestep
             _tracked.Clear();
         }
 
-        private static ActionRunCoroutine s_hook;
+        private static ActionRunCoroutine? _sHook;
 
         private static void ReHookAvoid(object sender, EventArgs e)
         {
-            s_hook = new ActionRunCoroutine(async ctx =>
+            _sHook = new ActionRunCoroutine(async ctx =>
             {
                 var poiType = Poi.Current.Type;
 
@@ -112,7 +113,7 @@ namespace Sidestep
                 return false;
             });
 
-            TreeHooks.Instance.InsertHook("TreeStart", 0, s_hook);
+            TreeHooks.Instance.InsertHook("TreeStart", 0, _sHook);
         }
 
         public delegate IEnumerable<AvoidInfo> AvoidHandler(BattleCharacter spellCaster,
@@ -171,8 +172,8 @@ namespace Sidestep
                     Logger.Info($"Removing {removable.Count} completed spells");
                     AvoidanceManager.RemoveAllAvoids(i => removable.Contains(i));
                     _tracked.RemoveAll(x => removable.Contains(x));
+                    _loggedSpells.Clear();
                 }
-
 
                 var newSpellCasts = GameObjectManager.GetObjectsOfType<BattleCharacter>()
                     .Select(IsValid)
@@ -188,45 +189,16 @@ namespace Sidestep
             }
         }
 
-        private IEnumerable<AvoidInfo> HandleNewCast((IEnumerable<AvoiderAttribute>, BattleCharacter) BX)
+        private IEnumerable<AvoidInfo> HandleNewCast((AvoiderAttribute?, BattleCharacter) BX)
         {
-            var attributes = BX.Item1;
+            var avoiderAttribute = BX.Item1;
             var c = BX.Item2;
+
+            if (avoiderAttribute == null)
+                return Array.Empty<AvoidInfo>();
 
             if (c == null || !c.IsValid)
                 return Array.Empty<AvoidInfo>();
-
-            var avoiderAttributes = attributes.ToArray();
-
-            if (avoiderAttributes.Length == 0)
-                return Array.Empty<AvoidInfo>();
-
-            AvoiderAttribute avoiderAttribute;
-
-            if (avoiderAttributes.Any(t => t.Type == AvoiderType.Spell))
-            {
-                avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.Spell);
-                Logger.Verbose(
-                    $"{c.SpellCastInfo.SpellData.LocalizedName} [Spell][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
-            }
-            else if (avoiderAttributes.Any(t => t.Type == AvoiderType.Omen))
-            {
-                avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.Omen);
-                Logger.Verbose(
-                    $"{c.SpellCastInfo.SpellData.LocalizedName} [Omen][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
-            }
-            else if (avoiderAttributes.Any(t => t.Type == AvoiderType.CastType))
-            {
-                avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.CastType);
-                Logger.Verbose(
-                    $"{c.SpellCastInfo.SpellData.LocalizedName} [CastType][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
-            }
-            else
-            {
-                Logger.Verbose(
-                    $"No Avoid info for: {c.SpellCastInfo.SpellData.LocalizedName} [None][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
-                return Array.Empty<AvoidInfo>();
-            }
 
             var handle = _avoiders[avoiderAttribute];
 
@@ -235,43 +207,73 @@ namespace Sidestep
 
         private readonly HashSet<(uint, uint)> _loggedSpells = new();
 
-        private (IEnumerable<AvoiderAttribute>, BattleCharacter) IsValid(BattleCharacter c)
+        private (AvoiderAttribute?, BattleCharacter) IsValid(BattleCharacter c)
         {
             if (c.IsMe)
-                return (Array.Empty<AvoiderAttribute>(), c);
+                return (null, c);
 
             if (c.CastingSpellId == 0)
-                return (Array.Empty<AvoiderAttribute>(), c);
-            // if (!c.StatusFlags.HasFlag(StatusFlags.Hostile))
-            //     return (Array.Empty<AvoiderAttribute>(), c);
+                return (null, c);
 
             var oid = c.SpellCastInfo.SpellData.Omen;
             var spid = c.CastingSpellId;
             var cid = c.SpellCastInfo.SpellData.RawCastType;
 
-            var allowed = _avoiders.Keys.Where(s =>
+            var avoiderAttributes = _avoiders.Keys.Where(s =>
                 s.Type == AvoiderType.Omen && s.Key == oid ||
                 s.Type == AvoiderType.Spell && s.Key == spid ||
                 s.Type == AvoiderType.CastType && s.Key == cid
-            );
+            ).ToArray();
 
+            // can only handle 1 spell at a time for a given enemy.
             var am = AvoidanceManager.AvoidInfos.Any(s => s.Collection.Contains(c));
-            var avoiderAttributes = allowed.ToArray(); //prevent multiple enumeration
 
+            if (am)
+            {
+                return (null, c);
+            }
+
+            var log = false;
             if (!_loggedSpells.Contains((c.NpcId, c.CastingSpellId)))
             {
                 Logger.Verbose(
                     $"[Detection] Detected Spell: {c.CastingSpellId} Capable: {avoiderAttributes.Length} && am: {am}");
                 _loggedSpells.Add((c.NpcId, c.CastingSpellId));
+                log = true;
             }
 
-            if (am)
+            AvoiderAttribute? avoiderAttribute;
+
+            if (avoiderAttributes.Any(t => t.Type == AvoiderType.Spell))
             {
-                return (Array.Empty<AvoiderAttribute>(), c);
+                avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.Spell);
+                if (log)
+                    Logger.Verbose(
+                        $"{c.SpellCastInfo.SpellData.LocalizedName} [Spell][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+            }
+            else if (avoiderAttributes.Any(t => t.Type == AvoiderType.Omen))
+            {
+                avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.Omen);
+                if (log)
+                    Logger.Verbose(
+                        $"{c.SpellCastInfo.SpellData.LocalizedName} [Omen][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+            }
+            else if (avoiderAttributes.Any(t => t.Type == AvoiderType.CastType))
+            {
+                avoiderAttribute = avoiderAttributes.FirstOrDefault(t => t.Type == AvoiderType.CastType);
+                if (log)
+                    Logger.Verbose(
+                        $"{c.SpellCastInfo.SpellData.LocalizedName} [CastType][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+            }
+            else
+            {
+                if (log)
+                    Logger.Verbose(
+                        $"No Avoid info for: {c.SpellCastInfo.SpellData.LocalizedName} [None][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+                return (null, c);
             }
 
-
-            return (avoiderAttributes, c);
+            return (avoiderAttribute, c);
         }
     }
 }
