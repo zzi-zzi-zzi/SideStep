@@ -93,6 +93,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Avoid\CrossGeneric.cs" />
     <Compile Include="Avoid\LazerGeneric.cs" />
     <Compile Include="Avoid\Malikahs_Well.cs"/>
     <Compile Include="Avoid\Torus.cs" />
