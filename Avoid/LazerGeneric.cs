@@ -25,7 +25,7 @@ namespace Sidestep.Avoid
         [Avoider(AvoiderType.CastType, 12)] //found in Eureka
         [Avoider(AvoiderType.Spell, 9198)] //Found in Ala Mhigo (Dungeon) - Cast by 12th Legion Roader on spawn before the first boss. 
         [Avoider(AvoiderType.CastType, 4)]
-        public static IEnumerable<AvoidInfo> LazerGeneric(BattleCharacter spellCaster, float rangeOverride = Single.NaN)
+        public static IEnumerable<AvoidInfo> LazerGeneric(BattleCharacter spellCaster, float rangeOverride)
         {
             var cached = spellCaster.CastingSpellId;
             //var rotation = Rotation(spellCaster);
@@ -47,7 +47,7 @@ namespace Sidestep.Avoid
         }
         
         [Avoider(AvoiderType.Omen, 188)]
-        public static IEnumerable<AvoidInfo> Cross(BattleCharacter spellCaster, float rangeOverride = Single.NaN)
+        public static IEnumerable<AvoidInfo> Cross(BattleCharacter spellCaster, float rangeOverride)
         {
             var cached = spellCaster.CastingSpellId;
             var square = spellCaster.Square();
