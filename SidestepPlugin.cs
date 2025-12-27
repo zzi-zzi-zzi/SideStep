@@ -123,6 +123,7 @@ namespace Sidestep
         /// </summary>
         public void LoadAvoidanceObjects()
         {
+            Logger.Verbose("Loading avoidance objects");
             _avoiders.Clear();
             using (new PerformanceLogger("LoadAvoidanceObjects"))
             {
@@ -147,6 +148,7 @@ namespace Sidestep
                     }
                 }
             }
+            Logger.Info("Loaded {0} avoidance objects", _avoiders.Count);
         }
 
         /// <summary>
@@ -164,7 +166,7 @@ namespace Sidestep
             {
                 throw new ArgumentException($"Duplicate key for: {attribute.Type} - {attribute.Key}");
             }
-            
+            Logger.Info("Adding custom avoidance type {0} with key {0}", attribute.Type, key);
             _avoiders.Add(attribute, handler);
         }
 
@@ -181,6 +183,7 @@ namespace Sidestep
             var avoiderKey = _avoiders.Keys.FirstOrDefault(k => k.Type == attribute.Type && k.Key == attribute.Key);
             if (avoiderKey == null) return false;
             
+            Logger.Info("removing avoidance type {0} with key {0}", attribute.Type, key);
             _avoiders.Remove(avoiderKey);
             return true;
         }
