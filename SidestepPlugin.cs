@@ -32,7 +32,7 @@ namespace Sidestep
     public class Sidestep : BotPlugin
     {
         public override string Author => "ZZI";
-        public override Version Version => new Version(6, 1, 2);
+        public override Version Version => new Version(7, 4, 0);
         public override string Name => "SideStep";
         public override bool WantButton => true;
 
