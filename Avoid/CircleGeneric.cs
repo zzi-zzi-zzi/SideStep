@@ -3,7 +3,7 @@ SideStep is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 You should have received a copy of the license along with this
 work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
-Orginal work done by zzi
+Original work done by zzi
                                                                                  */
 
 using System;
@@ -25,7 +25,7 @@ namespace Sidestep.Avoid
     {
         [Avoider(AvoiderType.CastType, 2)]
         [Avoider(AvoiderType.CastType, 5)]
-        [Avoider(AvoiderType.Spell, 6420, Range = 15f)]
+        [Avoider(AvoiderType.Spell, 6420, 15f)]
         [Avoider(AvoiderType.CastType, 6)]
         public static IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster, float omenOverride = Single.NaN)
         {

@@ -3,7 +3,7 @@ SideStep is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 You should have received a copy of the license along with this
 work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
-Orginal work done by zzi
+Original work done by zzi
                                                                                  */
 
 #nullable enable
@@ -57,7 +57,7 @@ namespace Sidestep
             ReHookAvoid(null, null);
         }
 
-        private void OnMapChanged(object sender, EventArgs e)
+        private void OnMapChanged(object? sender, EventArgs e)
         {
             _tracked.Clear();
         }
@@ -88,16 +88,15 @@ namespace Sidestep
 
         private static ActionRunCoroutine? _sHook;
 
-        private static void ReHookAvoid(object sender, EventArgs e)
+        private static void ReHookAvoid(object? sender, EventArgs? e)
         {
             _sHook = new ActionRunCoroutine(async ctx =>
             {
                 var poiType = Poi.Current.Type;
-
-                // taken from HB
-                // Special case: Bot will do a lot of fast stop n go when avoiding a mob that moves slowly and trying to
-                // do something near the mob. To fix, a delay is added to slow down the 'Stop n go' behavior
-                if (poiType == PoiType.Collect || poiType == PoiType.Gather || poiType == PoiType.Hotspot)
+                
+                // Special case: Bot will do a lot of fast stop & go when avoiding a mob that moves slowly and trying to
+                // do something near the mob. To fix, a delay is added to slow down the 'Stop & go' behavior
+                if (poiType is PoiType.Collect or PoiType.Gather or PoiType.Hotspot)
                 {
                     if (Core.Me.InCombat && AvoidanceManager.Avoids.Any(o => o.IsPointInAvoid(Poi.Current.Location)))
                     {
@@ -117,12 +116,16 @@ namespace Sidestep
         }
 
         public delegate IEnumerable<AvoidInfo> AvoidHandler(BattleCharacter spellCaster,
-            float rangeOverride = Single.NaN);
+            float rangeOverride = float.NaN);
 
         private Dictionary<AvoiderAttribute, AvoidHandler> _avoiders = new();
 
-        private void LoadAvoidanceObjects()
+        /// <summary>
+        /// This will scan the Sidestep Assembly to find AvoiderAttribute types and add them to our Avoider. 
+        /// </summary>
+        public void LoadAvoidanceObjects()
         {
+            _avoiders.Clear();
             using (new PerformanceLogger("LoadAvoidanceObjects"))
             {
                 var funcs = Assembly.GetExecutingAssembly().GetTypes().SelectMany(f => f.GetMethods())
@@ -149,6 +152,42 @@ namespace Sidestep
             }
         }
 
+        /// <summary>
+        /// Adds a delegate type to the avoidance creator. 
+        /// </summary>
+        /// <param name="avoiderType">This should map to an <see cref="AvoiderType"/></param>
+        /// <param name="key">This is the key that is used to match a specific AvoiderType</param>
+        /// <param name="handler"></param>
+        /// <param name="range"></param>
+        /// <exception cref="ArgumentException">Duplicate key for the AvoiderType / Key combo</exception>
+        public void AddHandler(ulong avoiderType, uint key, AvoidHandler handler, float range = float.NaN)
+        {
+            var attribute = new AvoiderAttribute((AvoiderType)avoiderType, key, range);
+            if (_avoiders.Keys.Any(k => k.Type == attribute.Type && k.Key == attribute.Key))
+            {
+                throw new ArgumentException($"Duplicate key for: {attribute.Type} - {attribute.Key}");
+            }
+            
+            _avoiders.Add(attribute, handler);
+        }
+
+        /// <summary>
+        /// Remove a specific avoider type and key.
+        /// You should not use this to remove any of the SideStep default avoids as you cannot add them back.
+        /// </summary>
+        /// <param name="avoiderType"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool RemoveHandler(ulong avoiderType, uint key)
+        {
+            var attribute = new AvoiderAttribute((AvoiderType)avoiderType, key);
+            var avoiderKey = _avoiders.Keys.FirstOrDefault(k => k.Type == attribute.Type && k.Key == attribute.Key);
+            if (avoiderKey == null) return false;
+            
+            _avoiders.Remove(avoiderKey);
+            return true;
+        }
+
         private readonly List<AvoidInfo> _tracked = new();
 
         public override void OnPulse()
@@ -167,7 +206,7 @@ namespace Sidestep
                 var removable = _tracked
                     .Where(i => !i.Condition() && AvoidanceManager.Avoids.All(z => z.AvoidInfo != i)).ToList();
 
-                if (removable.Any())
+                if (removable.Count != 0)
                 {
                     Logger.Info($"Removing {removable.Count} completed spells");
                     AvoidanceManager.RemoveAllAvoids(i => removable.Contains(i));
@@ -180,24 +219,21 @@ namespace Sidestep
                     .SelectMany(HandleNewCast)
                     .ToList();
 
-                if (newSpellCasts.Any())
+                if (newSpellCasts.Count != 0)
                 {
                     _tracked.AddRange(newSpellCasts);
                     //AvoidanceManager.AvoidInfos.AddRange(newSpellCasts);
-                    Logger.Info($"Added: {newSpellCasts.Count()} to the avoidance manager");
+                    Logger.Info($"Added: {newSpellCasts.Count} to the avoidance manager");
                 }
             }
         }
 
-        private IEnumerable<AvoidInfo> HandleNewCast((AvoiderAttribute?, BattleCharacter) BX)
+        private IEnumerable<AvoidInfo> HandleNewCast((AvoiderAttribute?, BattleCharacter?) bx)
         {
-            var avoiderAttribute = BX.Item1;
-            var c = BX.Item2;
+            var avoiderAttribute = bx.Item1;
+            var c = bx.Item2;
 
-            if (avoiderAttribute == null)
-                return Array.Empty<AvoidInfo>();
-
-            if (c == null || !c.IsValid)
+            if (avoiderAttribute == null || c == null || !c.IsValid)
                 return Array.Empty<AvoidInfo>();
 
             var handle = _avoiders[avoiderAttribute];
@@ -207,12 +243,9 @@ namespace Sidestep
 
         private readonly HashSet<(uint, uint)> _loggedSpells = new();
 
-        private (AvoiderAttribute?, BattleCharacter) IsValid(BattleCharacter c)
+        private (AvoiderAttribute?, BattleCharacter?) IsValid(BattleCharacter c)
         {
-            if (c.IsMe)
-                return (null, c);
-
-            if (c.CastingSpellId == 0)
+            if (c.IsMe || c.CastingSpellId == 0)
                 return (null, c);
 
             var oid = c.SpellCastInfo.SpellData.Omen;

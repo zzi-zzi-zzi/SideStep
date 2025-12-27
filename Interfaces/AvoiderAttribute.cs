@@ -3,7 +3,7 @@ SideStep is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 You should have received a copy of the license along with this
 work. If not, see <http://creativecommons.org/licenses/by-nc-sa/4.0/>.
-Orginal work done by zzi
+Original work done by zzi
                                                                                  */
 
 using System;
@@ -13,21 +13,21 @@ namespace Sidestep.Interfaces
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class AvoiderAttribute : Attribute
     {
-        public AvoiderType Type { get; set; }
-        public uint Key { get; set; }
+        public AvoiderType Type { get; }
+        public uint Key { get; }
 
-        public float Range { get; set; } = Single.NaN;
+        public float Range { get; }
 
-        public AvoiderAttribute(AvoiderType type, uint key)
+        public AvoiderAttribute(AvoiderType type, uint key, float range = float.NaN)
         {
             Type = type;
             Key = key;
+            Range = range;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            var aa = obj as AvoiderAttribute;
-            if (aa == null)
+            if (obj is not AvoiderAttribute aa)
                 return false;
             return aa.Type == Type && aa.Key == Key;
         }
@@ -41,7 +41,7 @@ namespace Sidestep.Interfaces
         {
             unchecked
             {
-                int hashCode = base.GetHashCode();
+                var hashCode = base.GetHashCode();
                 hashCode = (hashCode * 397) ^ Type.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)Key;
                 hashCode = (hashCode * 397) ^ Range.GetHashCode();
