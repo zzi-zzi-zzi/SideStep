@@ -27,7 +27,7 @@ namespace Sidestep.Avoid
         [Avoider(AvoiderType.CastType, 5)]
         [Avoider(AvoiderType.Spell, 6420, 15f)]
         [Avoider(AvoiderType.CastType, 6)]
-        public static IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster, float omenOverride = Single.NaN)
+        public static IEnumerable<AvoidInfo> Handle(BattleCharacter spellCaster, float omenOverride)
         {
             if (spellCaster.SpellCastInfo.SpellData.EffectRange > 45)
                 Logger.Info("Spell range is > 45. Does this require specific logic?");
@@ -57,7 +57,7 @@ namespace Sidestep.Avoid
         }
 
         [Avoider(AvoiderType.Spell, 31234)] // Body Slam - Handling this as Torus due to the knock back. 
-        public static IEnumerable<AvoidInfo> BodySlam31234(BattleCharacter spellCaster, float _ = Single.NaN)
+        public static IEnumerable<AvoidInfo> BodySlam31234(BattleCharacter spellCaster, float _)
         {
             var range = spellCaster.Range(out var center);
 

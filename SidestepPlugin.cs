@@ -28,10 +28,11 @@ using TreeSharp;
 
 namespace Sidestep
 {
+    // ReSharper disable once UnusedType.Global
     public class Sidestep : BotPlugin
     {
         public override string Author => "ZZI";
-        public override Version Version => new Version(6, 1, 2);
+        public override Version Version => new Version(7, 4, 0);
         public override string Name => "SideStep";
         public override bool WantButton => true;
 
@@ -90,41 +91,39 @@ namespace Sidestep
 
         private static void ReHookAvoid(object? sender, EventArgs? e)
         {
-            _sHook = new ActionRunCoroutine(async ctx =>
+            _sHook = new ActionRunCoroutine(async _ =>
             {
                 var poiType = Poi.Current.Type;
                 
                 // Special case: Bot will do a lot of fast stop & go when avoiding a mob that moves slowly and trying to
                 // do something near the mob. To fix, a delay is added to slow down the 'Stop & go' behavior
-                if (poiType is PoiType.Collect or PoiType.Gather or PoiType.Hotspot)
-                {
-                    if (Core.Me.InCombat && AvoidanceManager.Avoids.Any(o => o.IsPointInAvoid(Poi.Current.Location)))
-                    {
-                        TreeRoot.StatusText = "Waiting for 'avoid' to move before attempting to interact " +
-                                              Poi.Current.Name;
-                        var randomWaitTime = (new Random()).Next(3000, 8000);
-                        await Coroutine.Wait(randomWaitTime,
-                            () => Core.Me.InCombat ||
-                                  !AvoidanceManager.Avoids.Any(o => o.IsPointInAvoid(Poi.Current.Location)));
-                    }
-                }
+                if (poiType is not (PoiType.Collect or PoiType.Gather or PoiType.Hotspot)) return false;
+
+                if (!Core.Me.InCombat || !AvoidanceManager.Avoids.Any(o => o.IsPointInAvoid(Poi.Current.Location)))
+                    return false;
+                
+                TreeRoot.StatusText = "Waiting for 'avoid' to move before attempting to interact " +
+                                      Poi.Current.Name;
+                var randomWaitTime = (new Random()).Next(3000, 8000);
+                await Coroutine.Wait(randomWaitTime,
+                    () => Core.Me.InCombat ||
+                          !AvoidanceManager.Avoids.Any(o => o.IsPointInAvoid(Poi.Current.Location)));
+            
 
                 return false;
             });
 
             TreeHooks.Instance.InsertHook("TreeStart", 0, _sHook);
         }
-
-        public delegate IEnumerable<AvoidInfo> AvoidHandler(BattleCharacter spellCaster,
-            float rangeOverride = float.NaN);
-
-        private Dictionary<AvoiderAttribute, AvoidHandler> _avoiders = new();
+        
+        private Dictionary<AvoiderAttribute, Func<BattleCharacter, float, IEnumerable<AvoidInfo>>> _avoiders = new();
 
         /// <summary>
         /// This will scan the Sidestep Assembly to find AvoiderAttribute types and add them to our Avoider. 
         /// </summary>
         public void LoadAvoidanceObjects()
         {
+            Logger.Verbose("Loading avoidance objects");
             _avoiders.Clear();
             using (new PerformanceLogger("LoadAvoidanceObjects"))
             {
@@ -134,22 +133,22 @@ namespace Sidestep
                 foreach (var type in funcs)
                 {
                     var atbs = type.GetCustomAttributes<AvoiderAttribute>();
-                    var del = (AvoidHandler)Delegate.CreateDelegate(typeof(AvoidHandler), type);
+                    var del = (Func<BattleCharacter, float, IEnumerable<AvoidInfo>>)Delegate.CreateDelegate(typeof(Func<BattleCharacter, float, IEnumerable<AvoidInfo>>), type);
                     foreach (var atb in atbs)
                     {
-                        if (!_avoiders.ContainsKey(atb))
+                        if (!_avoiders.TryGetValue(atb, out var existing))
                         {
                             _avoiders.Add(atb, del);
                         }
                         else
                         {
-                            var existing = _avoiders[atb];
                             Logger.Warn(
                                 $"Duplicate Sidestep key for: {atb.Type} - {atb.Key} -- Matching Delegate:? {existing == del}");
                         }
                     }
                 }
             }
+            Logger.Info("Loaded {0} avoidance objects", _avoiders.Count);
         }
 
         /// <summary>
@@ -160,14 +159,14 @@ namespace Sidestep
         /// <param name="handler"></param>
         /// <param name="range"></param>
         /// <exception cref="ArgumentException">Duplicate key for the AvoiderType / Key combo</exception>
-        public void AddHandler(ulong avoiderType, uint key, AvoidHandler handler, float range = float.NaN)
+        public void AddHandler(ulong avoiderType, uint key, Func<BattleCharacter, float, IEnumerable<AvoidInfo>> handler, float range = float.NaN)
         {
             var attribute = new AvoiderAttribute((AvoiderType)avoiderType, key, range);
             if (_avoiders.Keys.Any(k => k.Type == attribute.Type && k.Key == attribute.Key))
             {
                 throw new ArgumentException($"Duplicate key for: {attribute.Type} - {attribute.Key}");
             }
-            
+            Logger.Info("Adding custom avoidance type {0} with key {0}", attribute.Type, key);
             _avoiders.Add(attribute, handler);
         }
 
@@ -184,6 +183,7 @@ namespace Sidestep
             var avoiderKey = _avoiders.Keys.FirstOrDefault(k => k.Type == attribute.Type && k.Key == attribute.Key);
             if (avoiderKey == null) return false;
             
+            Logger.Info("removing avoidance type {0} with key {0}", attribute.Type, key);
             _avoiders.Remove(avoiderKey);
             return true;
         }

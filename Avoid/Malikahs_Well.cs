@@ -19,8 +19,7 @@ namespace Sidestep.Avoid;
 public class Malikahs_Well
 {
     [Avoider(AvoiderType.Spell, 15593)] // Malikah's Well - Flail Smash
-    public static IEnumerable<AvoidInfo> TorusWithAvoidCenter(BattleCharacter spellCaster,
-        float omenOverride = Single.NaN)
+    public static IEnumerable<AvoidInfo> TorusWithAvoidCenter(BattleCharacter spellCaster, float omenOverride)
     {
         Logger.Info("~~~~~~~~~~~~~~~Flail Smash~~~~~~~~~~~~~~~");
         if (spellCaster.SpellCastInfo.SpellData.EffectRange > 45)

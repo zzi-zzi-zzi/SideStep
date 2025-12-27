@@ -56,7 +56,7 @@ namespace Sidestep.Avoid
         [Avoider(AvoiderType.Omen, 15, 270f)]
         [Avoider(AvoiderType.Omen, 16, 270f)]
         [Avoider(AvoiderType.Omen, 17, 270f)]
-        public static IEnumerable<AvoidInfo> SuperFans(BattleCharacter spellCaster, float rangeOverride = Single.NaN)
+        public static IEnumerable<AvoidInfo> SuperFans(BattleCharacter spellCaster, float rangeOverride)
         {
             return spellCaster.AddCone(rangeOverride);
         }
@@ -64,7 +64,7 @@ namespace Sidestep.Avoid
         // Non Omened Fans
         //Stone Vigil
         [Avoider(AvoiderType.Spell, 903, 120f)]
-        public static IEnumerable<AvoidInfo> ReallyLongBossFan(BattleCharacter spellCaster, float rangeOverride = Single.NaN)
+        public static IEnumerable<AvoidInfo> ReallyLongBossFan(BattleCharacter spellCaster, float rangeOverride)
         {
 
             var loc = spellCaster.Location;
@@ -83,7 +83,7 @@ namespace Sidestep.Avoid
                     _ => loc
                 ),
 
-                //add something under the mob so we don't get hit by standing at the mobs location.
+                //add something under the mob so we don't get hit by standing at the mobs' location.
                 AvoidanceManager.AddAvoidLocation(
                     () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
                     spellCaster.CombatReach / 2,
