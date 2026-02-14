@@ -280,7 +280,7 @@ namespace Sidestep
             if (log)
             {
                 _loggedWorldStates[arg.ID] = packed;
-                Logger.Verbose( $"[Detection] [World] [ID: {arg.ID}] [State: {arg.State}] [Flags: {arg.Flags}] [Unk: {arg.unk}]");
+                Logger.Info( $"[Detection] [World] [ID: {arg.ID}] [State: {arg.State}] [Flags: {arg.Flags}] [Unk: {arg.unk}]");
             }
             
 
