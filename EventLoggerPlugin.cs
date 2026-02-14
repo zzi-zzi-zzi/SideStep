@@ -13,6 +13,7 @@ using ff14bot;
 using ff14bot.AClasses;
 using ff14bot.Behavior;
 using ff14bot.Directors;
+using ff14bot.Enums;
 using ff14bot.Managers;
 using ff14bot.Navigation;
 using ff14bot.NeoProfiles;
@@ -36,7 +37,7 @@ namespace Sidestep
         
         
         private readonly LRUCache<(uint, uint), uint> _loggedSpells = new(20);
-        private readonly Dictionary<uint, uint> _loggedWorldStates = new();
+        private readonly Dictionary<uint, ulong> _loggedWorldStates = new();
         // ObjID - VfxIDs
         private readonly Dictionary<uint, HashSet<uint>> _loggedVFX = new();
         private static ActionRunCoroutine? _sHook;
@@ -124,8 +125,12 @@ namespace Sidestep
         {
             var zoneId = WorldManager.ZoneId;
             var key = arg.ID;
-            
-            var packed = (uint)(((arg.State & 0xFFFF) << 8) | arg.Flags);
+
+            // Assuming State is 16-bit and Flags is 8-bit
+            var packed = ((ulong)arg.unk << 24) |      // Move 32-bit unk to bits 24-55
+                         ((ulong)(arg.State & 0xFFFF) << 8) | // Move 16-bit State to bits 8-23
+                         (ushort)(arg.Flags & 0xFF);    // Place 8-bit Flags in bits 0-7
+
             var log = _loggedWorldStates.GetValueOrDefault(arg.ID, (uint)0) != packed;
             
             if (log)
@@ -145,8 +150,6 @@ namespace Sidestep
                 _loggedVFX.Remove(c.ObjectId);
                 return;
             }
-            if (c.CastingSpellId == 0)
-                return;
             
             var old = _loggedVFX.GetValueOrDefault(c.ObjectId, new HashSet<uint> {  });
 
@@ -161,9 +164,8 @@ namespace Sidestep
             var log = false || !_loggedSpells.contains((c.ObjectId, c.CastingSpellId));
             
 
-            
-
-            if (log && !c.IsMe)
+            // only log hostile spellcasts on targets
+            if (log && !c.IsMe && c.CastingSpellId > 0 && c.StatusFlags.HasFlag(StatusFlags.Hostile))
             {
                 var oid = c.SpellCastInfo.SpellData.Omen;
                 var spid = c.CastingSpellId;

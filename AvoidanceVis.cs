@@ -138,6 +138,8 @@ namespace FoxDen.Plugin.AvoidShit
 
                         float fy = bounds.Min.Y + (bottom + 1) * ch;
 
+                        
+
                         if (!td.TryGetValue(color, out var tl))
                         {
                             tl = new List<Vector3>();
