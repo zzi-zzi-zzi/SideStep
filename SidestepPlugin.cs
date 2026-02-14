@@ -43,7 +43,7 @@ namespace Sidestep
         private readonly HashSet<(uint, uint)> _loggedSpells = new();
         private readonly Dictionary<uint, uint> _loggedWorldStates = new();
         private static ActionRunCoroutine? _sHook;
-        private readonly Dictionary<AvoiderAttribute, Func<object, float, IEnumerable<AvoidInfo>>> _avoiders = new();
+        private readonly Dictionary<AvoiderAttribute, Func<BattleCharacter, float, IEnumerable<AvoidInfo>>> _avoiders = new();
         private readonly List<AvoidInfo> _tracked = new();
         
         #region Plugin Settings
@@ -141,7 +141,13 @@ namespace Sidestep
                 {
                     var newWorldCast = ic.MapEffects
                         .Select(MapEffects)
-                        .SelectMany(HandleNewWorld);
+                        .SelectMany(HandleNewWorld).ToList();
+                    
+                    if (newWorldCast.Count != 0)
+                    {
+                        _tracked.AddRange(newWorldCast);
+                    }
+                    count += newWorldCast.Count;
                 }
 
                 if (count != 0)
@@ -198,7 +204,7 @@ namespace Sidestep
                 foreach (var type in funcs)
                 {
                     var atbs = type.GetCustomAttributes<AvoiderAttribute>();
-                    var del = (Func<object, float, IEnumerable<AvoidInfo>>)Delegate.CreateDelegate(typeof(Func<BattleCharacter, float, IEnumerable<AvoidInfo>>), type);
+                    var del = (Func<BattleCharacter, float, IEnumerable<AvoidInfo>>)Delegate.CreateDelegate(typeof(Func<BattleCharacter, float, IEnumerable<AvoidInfo>>), type);
                     foreach (var atb in atbs)
                     {
                         if (!_avoiders.TryGetValue(atb, out var existing))
@@ -224,7 +230,7 @@ namespace Sidestep
         /// <param name="handler"></param>
         /// <param name="range"></param>
         /// <exception cref="ArgumentException">Duplicate key for the AvoiderType / Key combo</exception>
-        public void AddHandler(ulong avoiderType, uint key, Func<object, float, IEnumerable<AvoidInfo>> handler, float range = float.NaN)
+        public void AddHandler(ulong avoiderType, uint key, Func<BattleCharacter, float, IEnumerable<AvoidInfo>> handler, float range = float.NaN)
         {
             var attribute = new AvoiderAttribute((AvoiderType)avoiderType, key, range);
             if (_avoiders.Keys.Any(k => k.Type == attribute.Type && k.Key == attribute.Key))
@@ -283,14 +289,15 @@ namespace Sidestep
 
         private IEnumerable<AvoidInfo> HandleNewWorld((AvoiderAttribute?, MapEffect?) arg)
         {
-            var ai = arg.Item1;
-            var me =  arg.Item2;
-            if (ai == null || me == null)
-                return Array.Empty<AvoidInfo>();
-            
-            var handle = _avoiders[ai];
+            //var ai = arg.Item1;
+            //var me =  arg.Item2;
+            //if (ai == null || me == null)
+            //    return Array.Empty<AvoidInfo>();
 
-            return handle(me, ai.Range);
+            //var handle = _avoiders[ai];
+
+            //return handle(me, ai.Range);
+            return Array.Empty<AvoidInfo>();
         }
         
         private IEnumerable<AvoidInfo> HandleNewCast((AvoiderAttribute?, BattleCharacter?) bx)
