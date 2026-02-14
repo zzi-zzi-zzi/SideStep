@@ -283,6 +283,9 @@ namespace Sidestep
                 Logger.Info( $"[Detection] [World] [ID: {arg.ID}] [State: {arg.State}] [Flags: {arg.Flags}] [Unk: {arg.unk}]");
             }
             
+            if(avoiderAttributes.Length == 0) {
+                return (null, arg);
+            }
 
             return (avoiderAttributes.First(), arg);
         }
