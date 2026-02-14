@@ -42,4 +42,34 @@ namespace Sidestep.Logging
             rLogging.Write(LogColors.Warn, Prefix + string.Format(CultureInfo.InvariantCulture, format, args));
         }
     }
+    internal static class ELogger
+    {
+
+        private static string Prefix => $"[EventLogger] ";
+
+
+        [StringFormatMethod("format")]
+        internal static void Error(string format, params object[] args)
+        {
+            rLogging.Write(LogColors.Error, Prefix + string.Format(CultureInfo.InvariantCulture, format, args));
+        }
+
+        [StringFormatMethod("format")]
+        internal static void Info(string format, params object[] args)
+        {
+            rLogging.Write(LogColors.Info, Prefix + string.Format(CultureInfo.InvariantCulture, format, args));
+        }
+
+        [StringFormatMethod("format")]
+        internal static void Verbose(string format, params object[] args)
+        {
+            rLogging.WriteToFileSync(LogLevel.Verbose, Prefix + string.Format(CultureInfo.InvariantCulture, format, args));
+        }
+
+        [StringFormatMethod("format")]
+        internal static void Warn(string format, params object[] args)
+        {
+            rLogging.Write(LogColors.Warn, Prefix + string.Format(CultureInfo.InvariantCulture, format, args));
+        }
+    }
 }

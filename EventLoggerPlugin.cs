@@ -9,24 +9,18 @@ Original work done by zzi
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using Buddy.Coroutines;
 using ff14bot;
 using ff14bot.AClasses;
 using ff14bot.Behavior;
 using ff14bot.Directors;
-using ff14bot.Helpers;
 using ff14bot.Managers;
 using ff14bot.Navigation;
 using ff14bot.NeoProfiles;
 using ff14bot.Objects;
-using ff14bot.Pathing.Avoidance;
 using Sidestep.Helpers;
-using Sidestep.Interfaces;
-using Sidestep.Logging;
 using SideStep.Helpers;
 using TreeSharp;
+using Logger = Sidestep.Logging.ELogger;
 
 namespace Sidestep
 {
@@ -162,23 +156,7 @@ namespace Sidestep
             if (c.IsNpc)
                 name = c.Name;
 
-            for (var index =0; index < c.VfxContainer.Vfx.Length; index ++)
-            {
-                var vfx = c.VfxContainer.Vfx[index];
 
-                if (!vfx.IsValid) continue;
-                nvfx.Add(vfx.Id);
-
-                if (old.Contains(vfx.Id))
-                {
-                    continue;
-                }
-
-                
-
-                Logger.Info($"[Detection] on [npc: {c.NpcId}] [Name: {name}] [Vfx: {vfx.Id}] [Slot: {SlotName(index)}]");
-            }
-            _loggedVFX[c.ObjectId] = nvfx;
 
             var log = false || !_loggedSpells.contains((c.ObjectId, c.CastingSpellId));
             
@@ -190,10 +168,34 @@ namespace Sidestep
                 var oid = c.SpellCastInfo.SpellData.Omen;
                 var spid = c.CastingSpellId;
                 var cid = c.SpellCastInfo.SpellData.RawCastType;
+                _loggedSpells.add((c.ObjectId, c.CastingSpellId), c.NpcId);
 
                 Logger.Info( $"[Detection] on [npc: {c.NpcId}] [Name: {name}] [Spell: {c.CastingSpellId}] [Omen: {oid}] [Raw Cast Type: {cid}]");
             }
-           
+
+
+            if (c.VfxContainer.IsValid)
+            {
+                for (var index = 0; index < c.VfxContainer.Vfx.Length; index++)
+                {
+                    var vfx = c.VfxContainer.Vfx[index];
+                    if (vfx == null) continue;
+
+                    if (!vfx.IsValid) continue;
+                    nvfx.Add(vfx.Id);
+
+                    if (old.Contains(vfx.Id))
+                    {
+                        continue;
+                    }
+
+
+
+                    Logger.Info($"[Detection] on [npc: {c.NpcId}] [Name: {name}] [Vfx: {vfx.Id}] [Slot: {SlotName(index)}]");
+                }
+                _loggedVFX[c.ObjectId] = nvfx;
+            }
+
 
         }
 
