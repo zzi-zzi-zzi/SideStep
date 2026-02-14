@@ -13,10 +13,26 @@ namespace Sidestep.Interfaces
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class AvoiderAttribute : Attribute
     {
+        
+        /// <summary>
+        /// Type of avoidance this method should handle
+        /// </summary>
         public AvoiderType Type { get; }
+        
+        /// <summary>
+        /// Key for the Avoider Type
+        /// </summary>
         public uint Key { get; }
-
+        
+        /// <summary>
+        /// Used to override optional rage values in the handler
+        /// </summary>
         public float Range { get; }
+        
+        /// <summary>
+        /// Currently only used when <see cref="AvoiderType"/> is World 
+        /// </summary>
+        public uint Zone { get; }
 
         public AvoiderAttribute(AvoiderType type, uint key, float range = float.NaN)
         {
