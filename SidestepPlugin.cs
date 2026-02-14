@@ -60,11 +60,9 @@ namespace Sidestep
         private readonly Dictionary<uint, AvoidanceHandler> _castTypeAvoiders = new();
         private readonly Dictionary<(uint Zone, uint Id), MapEffectHandler> _worldAvoiders = new();
         private readonly List<AvoidInfo> _tracked = new();
-        
+
         #region Plugin Settings
 
-        
-        
         public override void OnButtonPress()
         {
             Logger.Verbose("Clearing Avoidance Manager");
@@ -480,7 +478,9 @@ namespace Sidestep
             {
                 return (null, arg);
             }
-                        
+            
+
+            
             if(!hasHandler) {
                 return (null, arg);
             }
@@ -529,6 +529,17 @@ namespace Sidestep
                      am = true;
                      break;
                  }
+            }
+
+            if (log)
+            {
+                uint capableCount = 0;
+                if (_spellAvoiders.ContainsKey(spid)) capableCount++;
+                if (_omenAvoiders.ContainsKey(oid)) capableCount++;
+                if (_castTypeAvoiders.ContainsKey(cid)) capableCount++;
+                _loggedSpells.add((c.NpcId, c.CastingSpellId), capableCount);
+
+                Logger.Info( $"[Detection] [Spell: {c.CastingSpellId}] [Omen: {oid}] [Raw Cast Type: {cid}] [Capable: {capableCount}] [avoidance manager: {am}]");
             }
             
             if (am)
