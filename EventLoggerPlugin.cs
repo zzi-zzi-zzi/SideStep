@@ -9,6 +9,7 @@ Original work done by zzi
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ff14bot;
 using ff14bot.AClasses;
 using ff14bot.Behavior;
@@ -31,6 +32,7 @@ namespace Sidestep
         public override string Author => "ZZI";
         public override Version Version => new Version(7, 4, 0);
         public override string Name => "EventLogger";
+        public override string Description => "Loggs common combat events to the console. You should only enable this plugin to debug avoidance. ";
         public override bool WantButton => true;
 
         public override string ButtonText => "Clear";
@@ -41,6 +43,7 @@ namespace Sidestep
         // ObjID - VfxIDs
         private readonly Dictionary<uint, HashSet<uint>> _loggedVFX = new();
         private static ActionRunCoroutine? _sHook;
+        private List<uint> _party;
 
 
 
@@ -69,6 +72,7 @@ namespace Sidestep
         {
             _loggedWorldStates.Clear();
             _loggedVFX.Clear();
+            _party = PartyManager.AllMembers.Select(k => k.ObjectId).ToList();
         }
 
         public override void OnDisabled()
@@ -99,7 +103,7 @@ namespace Sidestep
             {
 
                 // spells
-                foreach (var obj in GameObjectManager.GetObjectsOfType<BattleCharacter>())
+                foreach (var obj in GameObjectManager.GetObjectsOfType<BattleCharacter>().Where(bc => !_party.Contains(bc.ObjectId)))
                 {
                     IsValid(obj);
                 }
@@ -136,7 +140,7 @@ namespace Sidestep
             if (log)
             {
                 _loggedWorldStates[arg.ID] = packed;
-                Logger.Info( $"[Detection] [World] [ID: {arg.ID}] [State: {arg.State}] [Flags: {arg.Flags}] [Unk: {arg.unk}]");
+                Logger.Info( $"[World Detection] [ID: {arg.ID}] [State: {arg.State}] [Flags: {arg.Flags}] [Unk: {arg.unk}]");
             }
             
         }
@@ -172,11 +176,11 @@ namespace Sidestep
                 var cid = c.SpellCastInfo.SpellData.RawCastType;
                 _loggedSpells.add((c.ObjectId, c.CastingSpellId), c.NpcId);
 
-                Logger.Info( $"[Detection] on [npc: {c.NpcId}] [Name: {name}] [Spell: {c.CastingSpellId}] [Omen: {oid}] [Raw Cast Type: {cid}]");
+                Logger.Info( $"[Spell Detection] [npc: {c.NpcId}] [Obj: {c.ObjectId}] [Name: {name}] [Spell: {c.CastingSpellId}] [Spell Name: {c.SpellCastInfo.Name}] [Omen: {oid}] [Raw Cast Type: {cid}]");
             }
 
 
-            if (c.VfxContainer.IsValid)
+            if (c.VfxContainer.IsValid && (c.StatusFlags.HasFlag(StatusFlags.Hostile) || c.IsMe))
             {
                 for (var index = 0; index < c.VfxContainer.Vfx.Length; index++)
                 {
@@ -193,7 +197,7 @@ namespace Sidestep
 
 
 
-                    Logger.Info($"[Detection] on [npc: {c.NpcId}] [Name: {name}] [Vfx: {vfx.Id}] [Slot: {SlotName(index)}]");
+                    Logger.Info($"[VFX Detection] [npc: {c.NpcId}] [Obj: {c.ObjectId}] [Name: {name}] [Vfx: {vfx.Id}] [Slot: {SlotName(index)}]");
                 }
                 _loggedVFX[c.ObjectId] = nvfx;
             }
@@ -211,7 +215,7 @@ namespace Sidestep
             switch (index)
             {
                 case 0:
-                    return "VFXData - 0";
+                    return "Spell - 0";
                 case 6:
                 case 7:
                     return $"Omen - 0x{index:X}";

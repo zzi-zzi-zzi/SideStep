@@ -131,25 +131,10 @@ namespace Sidestep
                     var info = _tracked[i];
                     if (!info.Condition())
                     {
-                        // potential alloc here if AvoidanceManager.Avoids enumeration is heavy, but key is logic check
-                        bool found = false;
-                        foreach (var avoid in AvoidanceManager.Avoids)
-                        {
-                            if (avoid.AvoidInfo == info)
-                            {
-                                found = true;
-                                break;
-                            }
-                        }
-
-                        if (!found)
-                        {
-                            // we need to remove this
-                            AvoidanceManager.RemoveAvoid(info);
-                            _tracked.RemoveAt(i);
-                            removalCount++;
-                            
-                        }
+                        // we need to remove this
+                        AvoidanceManager.RemoveAvoid(info);
+                        _tracked.RemoveAt(i);
+                        removalCount++;
                     }
                 }
                 
