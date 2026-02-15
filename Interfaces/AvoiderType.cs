@@ -12,6 +12,7 @@ namespace Sidestep.Interfaces
         Spell = 0,
         Omen = 1,
         CastType = 2,
-        World = 3,   
+        WorldEvent = 3,   
+        Zone = 4,
     }
 }

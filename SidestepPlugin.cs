@@ -7,10 +7,6 @@ Original work done by zzi
                                                                                  */
 
 #nullable enable
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Buddy.Coroutines;
 using ff14bot;
 using ff14bot.AClasses;
@@ -26,6 +22,11 @@ using Sidestep.Helpers;
 using Sidestep.Interfaces;
 using Sidestep.Logging;
 using SideStep.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Windows.Forms;
 using TreeSharp;
 
 namespace Sidestep
@@ -53,13 +54,23 @@ namespace Sidestep
             public Func<MapEffect, float, IEnumerable<AvoidInfo>> Method;
             public AvoiderAttribute Attribute;
         }
+        private struct ZoneHandler
+        {
+            public Func<IEnumerable<AvoidInfo>> Method;
+            public AvoiderAttribute Attribute;
+        }
 
         private readonly LRUCache<(uint, uint), uint> _loggedSpells = new(20);
         private readonly Dictionary<uint, AvoidanceHandler> _spellAvoiders = new();
         private readonly Dictionary<uint, AvoidanceHandler> _omenAvoiders = new();
         private readonly Dictionary<uint, AvoidanceHandler> _castTypeAvoiders = new();
         private readonly Dictionary<(uint Zone, uint Id), MapEffectHandler> _worldAvoiders = new();
+        private readonly Dictionary<uint, List<ZoneHandler>> _zoneAvoiders = new();
+
         private readonly List<AvoidInfo> _tracked = new();
+
+        private readonly List<AvoidInfo> _zoneTracked = new();
+        private uint ZoneId = 0;
 
         #region Plugin Settings
 
@@ -77,23 +88,53 @@ namespace Sidestep
         public override void OnEnabled()
         {
             Logger.Verbose("Sidestep has been Enabled");
-            TreeRoot.OnStart += OnStart;
             TreeRoot.OnStop += OnStop;
             GameEvents.OnMapChanged += OnMapChanged;
             TreeHooks.Instance.OnHooksCleared += ReHookAvoid;
             ReHookAvoid(null, null);
         }
 
-        private void OnMapChanged(object? sender, EventArgs e) => Clear();
+        private void OnMapChanged(object? sender, EventArgs e) => RemoveOldAvoids(true);
 
         private void OnStop(BotBase bot) => Clear();
 
-        private void OnStart(BotBase bot) => Clear();
-        
         private void Clear()
         {
-            LoadAvoidanceObjects();
             _tracked.Clear();
+            _zoneTracked.Clear();
+            // Currently (1.0.818) remove all avoids only triggers on BotEvent.Stop triggers. We may need to clear on other stops
+            AvoidanceManager.RemoveAllAvoids(_ => true);
+        }
+
+        private int RemoveOldAvoids(bool force = false)
+        {
+            var removalCount = 0;
+
+            for (int i = _tracked.Count - 1; i >= 0; i--)
+            {
+                var info = _tracked[i];
+                if (!info.Condition() || force)
+                {
+                    // we need to remove this
+                    AvoidanceManager.RemoveAvoid(info);
+                    _tracked.RemoveAt(i);
+                    removalCount++;
+                }
+            }
+
+            if(WorldManager.ZoneId != ZoneId)
+            {
+                for (int i = _zoneTracked.Count - 1; i >= 0; i--)
+                {
+                    var info = _zoneTracked[i];
+                    AvoidanceManager.RemoveAvoid(info);
+                    _zoneTracked.RemoveAt(i);
+                    removalCount++;
+                }
+            }
+
+            return removalCount;
+
         }
 
         public override void OnDisabled()
@@ -103,7 +144,6 @@ namespace Sidestep
                 TreeHooks.Instance.RemoveHook("TreeStart", _sHook);
 
             TreeHooks.Instance.OnHooksCleared -= ReHookAvoid;
-            TreeRoot.OnStart -= OnStart;
             TreeRoot.OnStop -= OnStop;
             GameEvents.OnMapChanged -= OnMapChanged;
 
@@ -125,18 +165,7 @@ namespace Sidestep
             {
                 // Remove tracked avoidances that have completed
                 // Avoid LINQ allocations here by iterating backwards or using a list to collect removal candidates without delegates
-                var removalCount = 0;
-                for (int i = _tracked.Count - 1; i >= 0; i--)
-                {
-                    var info = _tracked[i];
-                    if (!info.Condition())
-                    {
-                        // we need to remove this
-                        AvoidanceManager.RemoveAvoid(info);
-                        _tracked.RemoveAt(i);
-                        removalCount++;
-                    }
-                }
+                var removalCount = RemoveOldAvoids();
                 
                 if (removalCount > 0)
                 {
@@ -182,6 +211,18 @@ namespace Sidestep
                                }
                            }
                         }
+                    }
+                }
+
+                // Zone
+                if(ZoneId != WorldManager.ZoneId)
+                {
+                    ZoneId = WorldManager.ZoneId;
+                    if(_zoneAvoiders.TryGetValue(ZoneId, out var handles))
+                    {
+                        var list = handles.SelectMany(h => h.Method());
+                        // Add all zone tracked avoiders
+                        _zoneTracked.AddRange(list);
                     }
                 }
 
@@ -235,6 +276,7 @@ namespace Sidestep
             _omenAvoiders.Clear();
             _castTypeAvoiders.Clear();
             _worldAvoiders.Clear();
+            _zoneAvoiders.Clear();
 
             using (new PerformanceLogger("LoadAvoidanceObjects"))
             {
@@ -249,14 +291,14 @@ namespace Sidestep
                         var firstAttr = attributes[0];
                         
                         // Determine if this is a MapEffect (World) or BattleCharacter handler based on the first attribute
-                        if (firstAttr.Type == AvoiderType.World)
+                        if (firstAttr.Type == AvoiderType.WorldEvent)
                         {
                             try 
                             {
                                 var del = (Func<MapEffect, float, IEnumerable<AvoidInfo>>)Delegate.CreateDelegate(typeof(Func<MapEffect, float, IEnumerable<AvoidInfo>>), method);
                                 foreach (var atb in attributes)
                                 {
-                                    if (atb.Type != AvoiderType.World) 
+                                    if (atb.Type != AvoiderType.WorldEvent) 
                                     {
                                         Logger.Warn($"Method {method.Name} has mixed AvoiderTypes which is not supported.");
                                         continue;
@@ -265,6 +307,30 @@ namespace Sidestep
                                     var handler = new MapEffectHandler { Method = del, Attribute = atb };
                                     if (!_worldAvoiders.TryAdd((atb.Zone, atb.Key), handler))
                                         Logger.Warn($"Duplicate world avoider key: {atb.Key} in zone {atb.Zone}");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error($"Failed to bind World avoider {method.Name}: {ex.Message}");
+                            }
+                        }
+                        else if(firstAttr.Type == AvoiderType.Zone)
+                        {
+                            try
+                            {
+                                var del = (Func<IEnumerable<AvoidInfo>>)Delegate.CreateDelegate(typeof(Func<IEnumerable<AvoidInfo>>), method);
+                                foreach (var atb in attributes)
+                                {
+                                    if (atb.Type != AvoiderType.WorldEvent)
+                                    {
+                                        Logger.Warn($"Method {method.Name} has mixed AvoiderTypes which is not supported.");
+                                        continue;
+                                    }
+
+                                    var handler = new ZoneHandler { Method = del, Attribute = atb };
+                                    var vals = _zoneAvoiders.GetValueOrDefault(atb.Zone, new List<ZoneHandler>());
+                                    vals.Add(handler);
+                                    _zoneAvoiders[atb.Zone] = vals; 
                                 }
                             }
                             catch (Exception ex)
@@ -294,7 +360,7 @@ namespace Sidestep
                                             if (!_castTypeAvoiders.TryAdd(atb.Key, handler))
                                                 Logger.Warn($"Duplicate cast type avoider key: {atb.Key}");
                                             break;
-                                        case AvoiderType.World:
+                                        case AvoiderType.WorldEvent:
                                             Logger.Warn($"Skipping World attribute on BattleCharacter handler {method.Name}");
                                             break;
                                     }
@@ -337,7 +403,7 @@ namespace Sidestep
                 case AvoiderType.CastType:
                     added = _castTypeAvoiders.TryAdd(key, h);
                     break;
-                case AvoiderType.World:
+                case AvoiderType.WorldEvent:
                     throw new ArgumentException("Use AddHandler overload for World/MapEffect types");
             }
 
@@ -361,7 +427,7 @@ namespace Sidestep
         {
             var attribute = new AvoiderAttribute((AvoiderType)avoiderType, key, range);
             
-            if (attribute.Type != AvoiderType.World)
+            if (attribute.Type != AvoiderType.WorldEvent)
             {
                  throw new ArgumentException("This overload only supports World types");
             }
@@ -404,7 +470,7 @@ namespace Sidestep
                 case AvoiderType.CastType:
                     removed = _castTypeAvoiders.Remove(key);
                     break;
-                case AvoiderType.World:
+                case AvoiderType.WorldEvent:
                     throw new ArgumentException("Use RemoveHandler overload for World/MapEffect types");
             }
             return removed;
@@ -419,7 +485,7 @@ namespace Sidestep
 
             switch (type)
             {
-                case AvoiderType.World:
+                case AvoiderType.WorldEvent:
                     removed = _worldAvoiders.Remove((zone, key));
                     break;
                     
@@ -452,7 +518,7 @@ namespace Sidestep
             bool am = false;
             foreach (var s in AvoidanceManager.AvoidInfos) 
             {
-                 if (s.Collection.Contains((zoneId, AvoiderType.World, key)))
+                 if (s.Collection.Contains((zoneId, AvoiderType.WorldEvent, key)))
                  {
                      am = true;
                      break;
