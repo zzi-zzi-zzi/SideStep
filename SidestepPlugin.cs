@@ -307,7 +307,7 @@ namespace Sidestep
                                         continue;
                                     }
                                     
-                                    var handler = new MapEffectHandler { Method = del, Attribute = atb };
+                                    var handler = new MapEffectHandler { Method = del, Attribute = atb, Enabled = true };
                                     if (!_worldAvoiders.TryAdd((atb.Zone, atb.Key), handler))
                                         Logger.Warn($"Duplicate world avoider key: {atb.Key} in zone {atb.Zone}");
                                 }
@@ -330,7 +330,7 @@ namespace Sidestep
                                         continue;
                                     }
 
-                                    var handler = new ZoneHandler { Method = del, Attribute = atb };
+                                    var handler = new ZoneHandler { Method = del, Attribute = atb, Enabled = true };
                                     var vals = _zoneAvoiders.GetValueOrDefault(atb.Zone, new List<ZoneHandler>());
                                     vals.Add(handler);
                                     _zoneAvoiders[atb.Zone] = vals; 
@@ -348,7 +348,7 @@ namespace Sidestep
                                 var del = (Func<BattleCharacter, float, IEnumerable<AvoidInfo>>)Delegate.CreateDelegate(typeof(Func<BattleCharacter, float, IEnumerable<AvoidInfo>>), method);
                                 foreach (var atb in attributes)
                                 {
-                                    var handler = new AvoidanceHandler { Method = del, Attribute = atb };
+                                    var handler = new AvoidanceHandler { Method = del, Attribute = atb, Enabled = true };
                                     switch (atb.Type)
                                     {
                                         case AvoiderType.Spell:
