@@ -46,17 +46,20 @@ namespace Sidestep
         private struct AvoidanceHandler
         {
             public Func<BattleCharacter, float, IEnumerable<AvoidInfo>> Method;
+            public bool Enabled;
             public AvoiderAttribute Attribute;
         }
 
         private struct MapEffectHandler
         {
             public Func<MapEffect, float, IEnumerable<AvoidInfo>> Method;
+            public bool Enabled;
             public AvoiderAttribute Attribute;
         }
         private struct ZoneHandler
         {
             public Func<IEnumerable<AvoidInfo>> Method;
+            public bool Enabled;
             public AvoiderAttribute Attribute;
         }
 
@@ -462,13 +465,28 @@ namespace Sidestep
             switch (type)
             {
                 case AvoiderType.Spell:
-                    removed = _spellAvoiders.Remove(key);
+                    if(_spellAvoiders.TryGetValue(key, out var ah))
+                    {
+                        ah.Enabled = false;
+                        _spellAvoiders[key] = ah;
+                        removed = true;
+                    }
                     break;
                 case AvoiderType.Omen:
-                    removed = _omenAvoiders.Remove(key);
+                    if (_omenAvoiders.TryGetValue(key, out var oh))
+                    {
+                        oh.Enabled = false;
+                        _omenAvoiders[key] = oh;
+                        removed = true;
+                    }
                     break;
                 case AvoiderType.CastType:
-                    removed = _castTypeAvoiders.Remove(key);
+                    if (_castTypeAvoiders.TryGetValue(key, out var cth))
+                    {
+                        cth.Enabled = false;
+                        _castTypeAvoiders[key] = cth;
+                        removed = true;
+                    }
                     break;
                 case AvoiderType.WorldEvent:
                     throw new ArgumentException("Use RemoveHandler overload for World/MapEffect types");
@@ -486,18 +504,16 @@ namespace Sidestep
             switch (type)
             {
                 case AvoiderType.WorldEvent:
-                    removed = _worldAvoiders.Remove((zone, key));
+                    if (_worldAvoiders.TryGetValue((zone, key), out var cth))
+                    {
+                        cth.Enabled = false;
+                        _worldAvoiders[(zone, key)] = cth;
+                        removed = true;
+                    }
                     break;
-                    
-                case AvoiderType.Spell:
-                    removed = _spellAvoiders.Remove(key);
-                    break;
-                case AvoiderType.Omen:
-                    removed = _omenAvoiders.Remove(key);
-                    break;
-                case AvoiderType.CastType:
-                    removed = _castTypeAvoiders.Remove(key);
-                    break;
+
+                default:
+                    return RemoveHandler(avoiderType, key);
                 
             }
             return removed;
@@ -533,6 +549,11 @@ namespace Sidestep
 
             
             if(!hasHandler) {
+                return (null, arg);
+            }
+
+            if(!handler.Enabled)
+            {
                 return (null, arg);
             }
 
@@ -598,13 +619,13 @@ namespace Sidestep
                 return (null, c);
             }
 
-            if (handler.HasValue)
+            if (handler.HasValue && handler.Value.Enabled)
             {
                 if (log)
                 {
                     var avoiderAttribute = handler.Value.Attribute;
                     Logger.Verbose(
-                        $"{c.SpellCastInfo.SpellData.LocalizedName} [Type {avoiderAttribute.Type}][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+                        $"Sidestep Handler: {c.SpellCastInfo.SpellData.LocalizedName} [Type: {avoiderAttribute.Type} ({(ulong)avoiderAttribute.Type})][Key: {avoiderAttribute.Key}] [Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
                 }
                 return (handler, c);
             }
