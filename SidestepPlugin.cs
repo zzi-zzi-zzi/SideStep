@@ -46,24 +46,22 @@ namespace Sidestep
         private struct AvoidanceHandler
         {
             public Func<BattleCharacter, float, IEnumerable<AvoidInfo>> Method;
-            public bool Enabled;
             public AvoiderAttribute Attribute;
         }
 
         private struct MapEffectHandler
         {
             public Func<MapEffect, float, IEnumerable<AvoidInfo>> Method;
-            public bool Enabled;
             public AvoiderAttribute Attribute;
         }
         private struct ZoneHandler
         {
             public Func<IEnumerable<AvoidInfo>> Method;
-            public bool Enabled;
             public AvoiderAttribute Attribute;
         }
 
         private readonly LRUCache<(uint, uint), uint> _loggedSpells = new(20);
+        private readonly HashSet<uint> _overrides = new();
         private readonly Dictionary<uint, AvoidanceHandler> _spellAvoiders = new();
         private readonly Dictionary<uint, AvoidanceHandler> _omenAvoiders = new();
         private readonly Dictionary<uint, AvoidanceHandler> _castTypeAvoiders = new();
@@ -105,6 +103,7 @@ namespace Sidestep
         {
             _tracked.Clear();
             _zoneTracked.Clear();
+            _overrides.Clear();
             // Currently (1.0.818) remove all avoids only triggers on BotEvent.Stop triggers. We may need to clear on other stops
             AvoidanceManager.RemoveAllAvoids(_ => true);
         }
@@ -280,6 +279,7 @@ namespace Sidestep
             _castTypeAvoiders.Clear();
             _worldAvoiders.Clear();
             _zoneAvoiders.Clear();
+            _overrides.Clear();
 
             using (new PerformanceLogger("LoadAvoidanceObjects"))
             {
@@ -307,7 +307,7 @@ namespace Sidestep
                                         continue;
                                     }
                                     
-                                    var handler = new MapEffectHandler { Method = del, Attribute = atb, Enabled = true };
+                                    var handler = new MapEffectHandler { Method = del, Attribute = atb };
                                     if (!_worldAvoiders.TryAdd((atb.Zone, atb.Key), handler))
                                         Logger.Warn($"Duplicate world avoider key: {atb.Key} in zone {atb.Zone}");
                                 }
@@ -330,7 +330,7 @@ namespace Sidestep
                                         continue;
                                     }
 
-                                    var handler = new ZoneHandler { Method = del, Attribute = atb, Enabled = true };
+                                    var handler = new ZoneHandler { Method = del, Attribute = atb};
                                     var vals = _zoneAvoiders.GetValueOrDefault(atb.Zone, new List<ZoneHandler>());
                                     vals.Add(handler);
                                     _zoneAvoiders[atb.Zone] = vals; 
@@ -348,7 +348,7 @@ namespace Sidestep
                                 var del = (Func<BattleCharacter, float, IEnumerable<AvoidInfo>>)Delegate.CreateDelegate(typeof(Func<BattleCharacter, float, IEnumerable<AvoidInfo>>), method);
                                 foreach (var atb in attributes)
                                 {
-                                    var handler = new AvoidanceHandler { Method = del, Attribute = atb, Enabled = true };
+                                    var handler = new AvoidanceHandler { Method = del, Attribute = atb };
                                     switch (atb.Type)
                                     {
                                         case AvoiderType.Spell:
@@ -382,141 +382,25 @@ namespace Sidestep
         }
 
         /// <summary>
-        /// Adds a delegate type to the avoidance creator. 
+        /// Disable all sidestep avoidance for a spell. 
         /// </summary>
-        /// <param name="avoiderType">This should map to an <see cref="AvoiderType"/></param>
-        /// <param name="key">This is the key that is used to match a specific AvoiderType</param>
-        /// <param name="handler"></param>
-        /// <param name="range"></param>
-        /// <exception cref="ArgumentException">Duplicate key for the AvoiderType / Key combo</exception>
-        public void AddHandler(ulong avoiderType, uint key, Func<BattleCharacter, float, IEnumerable<AvoidInfo>> handler, float range = float.NaN)
+        /// <param name="spellId"></param>
+        /// <returns>True if the override is added. False if the override already existed.</returns>
+        public bool Override(uint spellId)
         {
-            var attribute = new AvoiderAttribute((AvoiderType)avoiderType, key, range);
-            var h = new AvoidanceHandler { Method = handler, Attribute = attribute };
-            
-            bool added = false;
-            switch (attribute.Type)
-            {
-                case AvoiderType.Spell:
-                    added = _spellAvoiders.TryAdd(key, h);
-                    break;
-                case AvoiderType.Omen:
-                    added = _omenAvoiders.TryAdd(key, h);
-                    break;
-                case AvoiderType.CastType:
-                    added = _castTypeAvoiders.TryAdd(key, h);
-                    break;
-                case AvoiderType.WorldEvent:
-                    throw new ArgumentException("Use AddHandler overload for World/MapEffect types");
-            }
-
-            if (!added)
-            {
-                 throw new ArgumentException($"Duplicate key for: {attribute.Type} - {attribute.Key}");
-            }
-            
-            Logger.Info("Adding custom avoidance type {0} with key {1}", attribute.Type, key);
+            Logger.Info($"Override Spell: {spellId}");
+            return _overrides.Add(spellId);
         }
 
         /// <summary>
-        /// Adds a delegate type to the avoidance creator. 
+        /// Will remove an Override for a spell by the SpellId
         /// </summary>
-        /// <param name="avoiderType">This should map to an <see cref="AvoiderType"/></param>
-        /// <param name="key">This is the key that is used to match a specific AvoiderType</param>
-        /// <param name="handler"></param>
-        /// <param name="range"></param>
-        /// <exception cref="ArgumentException">Duplicate key for the AvoiderType / Key combo</exception>
-        public void AddHandler(ulong avoiderType, uint zone, uint key, Func<MapEffect, float, IEnumerable<AvoidInfo>> handler, float range = float.NaN)
+        /// <param name="spellId"></param>
+        /// <returns>True if the element is found and removed; False otherwise</returns>
+        public bool RemoveOverride(uint spellId)
         {
-            var attribute = new AvoiderAttribute((AvoiderType)avoiderType, key, range);
-            
-            if (attribute.Type != AvoiderType.WorldEvent)
-            {
-                 throw new ArgumentException("This overload only supports World types");
-            }
-
-            var h = new MapEffectHandler { Method = handler, Attribute = attribute };
-            
-            // Defaulting zone to 0 as in previous logic, though World type should probably specify zone?
-            var added = _worldAvoiders.TryAdd((zone, key), h);
-
-            if (!added)
-            {
-                 throw new ArgumentException($"Duplicate key for: {attribute.Type} - {attribute.Key}");
-            }
-            
-            Logger.Info("Adding custom world avoidance type {0} with key {1}", attribute.Type, key);
-        }
-
-        /// <summary>
-        /// Remove a specific avoider type and key.
-        /// You should not use this to remove any of the SideStep default avoids as you cannot add them back.
-        /// </summary>
-        /// <param name="avoiderType"></param>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        public bool RemoveHandler(ulong avoiderType, uint key)
-        {
-            var type = (AvoiderType)avoiderType;
-            bool removed = false;
-            
-            Logger.Info("removing avoidance type {0} with key {1}", type, key);
-
-            switch (type)
-            {
-                case AvoiderType.Spell:
-                    if(_spellAvoiders.TryGetValue(key, out var ah))
-                    {
-                        ah.Enabled = false;
-                        _spellAvoiders[key] = ah;
-                        removed = true;
-                    }
-                    break;
-                case AvoiderType.Omen:
-                    if (_omenAvoiders.TryGetValue(key, out var oh))
-                    {
-                        oh.Enabled = false;
-                        _omenAvoiders[key] = oh;
-                        removed = true;
-                    }
-                    break;
-                case AvoiderType.CastType:
-                    if (_castTypeAvoiders.TryGetValue(key, out var cth))
-                    {
-                        cth.Enabled = false;
-                        _castTypeAvoiders[key] = cth;
-                        removed = true;
-                    }
-                    break;
-                case AvoiderType.WorldEvent:
-                    throw new ArgumentException("Use RemoveHandler overload for World/MapEffect types");
-            }
-            return removed;
-        }
-
-        public bool RemoveHandler(ulong avoiderType, uint zone, uint key)
-        {
-            var type = (AvoiderType)avoiderType;
-            bool removed = false;
-            
-            Logger.Info("removing avoidance type {0} with key {1}", type, key);
-
-            switch (type)
-            {
-                case AvoiderType.WorldEvent:
-                    if (_worldAvoiders.TryGetValue((zone, key), out var cth))
-                    {
-                        cth.Enabled = false;
-                        _worldAvoiders[(zone, key)] = cth;
-                        removed = true;
-                    }
-                    break;
-
-                default:
-                    return RemoveHandler(avoiderType, key);
-                
-            }
-            return removed;
+            Logger.Info($"Remove Override: {spellId}");
+            return _overrides.Remove(spellId);
         }
         #endregion
         
@@ -549,11 +433,6 @@ namespace Sidestep
 
             
             if(!hasHandler) {
-                return (null, arg);
-            }
-
-            if(!handler.Enabled)
-            {
                 return (null, arg);
             }
 
@@ -606,12 +485,14 @@ namespace Sidestep
             if (log)
             {
                 uint capableCount = 0;
+                uint over = 0;
+                if (_overrides.Contains(spid)) over++;
                 if (_spellAvoiders.ContainsKey(spid)) capableCount++;
                 if (_omenAvoiders.ContainsKey(oid)) capableCount++;
                 if (_castTypeAvoiders.ContainsKey(cid)) capableCount++;
                 _loggedSpells.add((c.NpcId, c.CastingSpellId), capableCount);
 
-                Logger.Info( $"[Detection] [Spell: {c.CastingSpellId}] [Omen: {oid}] [Raw Cast Type: {cid}] [Capable: {capableCount}] [avoidance manager: {am}]");
+                Logger.Info( $"[Detection] [Spell: {c.CastingSpellId}] [Omen: {oid}] [Raw Cast Type: {cid}] [Capable: {capableCount}] [avoidance manager: {am}] [override: {over}]");
             }
             
             if (am)
@@ -619,7 +500,7 @@ namespace Sidestep
                 return (null, c);
             }
 
-            if (handler.HasValue && handler.Value.Enabled)
+            if (handler.HasValue && !_overrides.Contains(spid))
             {
                 if (log)
                 {
@@ -631,9 +512,11 @@ namespace Sidestep
             }
             else
             {
-                if (log)
+                if (log && !_overrides.Contains(spid))
                     Logger.Verbose(
                         $"No Avoid info for: {c.SpellCastInfo.SpellData.LocalizedName} [NpcID: {c.NpcId}][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
+                else 
+                    Logger.Verbose($"Override for Spell: {c.SpellCastInfo.SpellData.LocalizedName} [NpcID: {c.NpcId}][Id: {c.CastingSpellId}][Omen: {c.SpellCastInfo.SpellData.Omen}][RawCastType: {c.SpellCastInfo.SpellData.RawCastType}][ObjId: {c.ObjectId}]");
                 return (null, c);
             }
         }
