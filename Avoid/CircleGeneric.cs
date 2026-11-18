@@ -72,7 +72,7 @@ namespace Sidestep.Avoid
                     50f, //Leash Radius
                     bc => 0f, // Rotation
                     bc => 1.0f, // Scale
-                    bc => 1.0f, //height
+                    bc => 15.0f, //height
                     bc => points, //radiusProducer
                     bc => center, //locationProducer
                     () => new[] { spellCaster } //collectionProducer
