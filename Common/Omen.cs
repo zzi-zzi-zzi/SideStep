@@ -74,6 +74,27 @@ namespace Sidestep.Common
             return outerPoints.Concat(innerPoints).ToArray();
         }
 
+        /// <summary>
+        /// Points of a cone with its tip at the origin, opening towards +Y.
+        /// </summary>
+        /// <param name="radius">How far the cone reaches</param>
+        /// <param name="arcRadians">The full angle of the cone</param>
+        /// <returns></returns>
+        public static Vector2[] Cone(float radius, float arcRadians)
+        {
+            List<Vector2> points = new() { new Vector2(0, 0) };
+
+            var halfArc = arcRadians / 2;
+            var step = MathEx.DegreesToRadians(5);
+            for (var angle = -halfArc; angle < halfArc; angle += step)
+            {
+                points.Add(new Vector2((float)(radius * Math.Sin(angle)), (float)(radius * Math.Cos(angle))));
+            }
+
+            points.Add(new Vector2((float)(radius * Math.Sin(halfArc)), (float)(radius * Math.Cos(halfArc))));
+            return points.ToArray();
+        }
+
         public static Vector2[] Square(this BattleCharacter spellCaster)
         {
             try
@@ -113,23 +134,45 @@ namespace Sidestep.Common
 
                 var rot = MathEx.Rotation(d);
 
-                var rad = (float)Math.Round(MathEx.NormalizeRadian(rot - spellCaster.Heading), 2);
-
                 var me = Core.Me.Location;
-                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1} = {2}", rot, spellCaster.Heading, rad);
+                Logger.Info("Debug: Rotation: {0} vs Mob heading: {1}", rot, spellCaster.Heading);
 
+                // The marker on the ground is where the attack lands. It can point away from the way the
+                // mob faces, and it can stay put while the mob turns, so the cone follows the marker and
+                // not the mob's heading.
+                var direction = rot;
+                var points = Cone(depth, MathEx.DegreesToRadians(Math.Min(360f, arcDegrees * 1.55f)));
+                var height = Math.Min(30f, Math.Max(16f, depth));
 
                 return new[]
                 {
-                    AvoidanceManager.AddAvoidUnitCone<BattleCharacter>(
+                    AvoidanceManager.AddAvoidPolygon<BattleCharacter>(
                         () => spellCaster.IsValid && spellCaster.CastingSpellId == cachedSpell, //can run
-                        bc => bc.ObjectId == spellCaster.ObjectId, //object selector
                         () => me, //LeashPoint
                         120, //leash size
-                        rad, //rotation
-                        depth, //radius / Depth
-                        arcDegrees * 1.55f, //arcDegrees
-                        bc => bc.Location
+                        bc =>
+                        {
+                            try
+                            {
+                                var current = forcedMatrix ?? bc.OmenMatrix;
+                                current.Transform(One, out var edge);
+                                var towards = edge - current.Center;
+                                if (towards.X != 0 || towards.Z != 0)
+                                    direction = MathEx.Rotation(towards);
+                            }
+                            catch (Exception)
+                            {
+                                // the marker could not be read: keep the direction it last had
+                            }
+
+                            return -MathEx.NormalizeRadian(direction);
+                        }, //rotation
+                        bc => 1.0f, //scale
+                        bc => height, //height
+                        bc => points, //points
+                        bc => bc.Location, //locationProducer
+                        () => new[] { spellCaster }, //collectionProducer
+                        bc => bc != null && bc.IsValid //objectValidator
                     ),
 
                     AvoidanceManager.AddAvoidLocation(
